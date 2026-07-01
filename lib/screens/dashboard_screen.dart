@@ -84,7 +84,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final maxVillageCount = _stats.countsByVillage.values.isEmpty
         ? 1
         : _stats.countsByVillage.values.reduce((a, b) => a > b ? a : b);
+final screenWidth = MediaQuery.of(context).size.width;
 
+final quickActionColumns = screenWidth >= 900
+    ? 4
+    : screenWidth >= 700
+        ? 4
+        : screenWidth >= 500
+            ? 3
+            : 2;
+
+final siteTypeColumns = screenWidth >= 900
+    ? 6
+    : screenWidth >= 700
+        ? 4
+        : screenWidth >= 500
+            ? 4
+            : 2;
     return Scaffold(
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -151,20 +167,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   // --- By site type ---
                   SectionHeader(title: 'By Site Type', actionLabel: 'View Details', onAction: () {}),
                   const SizedBox(height: 12),
-                  GridView.count(
-                    crossAxisCount: 4,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    childAspectRatio: 0.78,
-                    children: SiteType.values.map((t) {
-                      final count = _stats.countsByType[t] ?? 0;
-                      final pct = totalTypeCount == 0 ? 0.0 : (count / totalTypeCount) * 100;
-                      return SiteTypeCard(type: t, count: count, percentage: pct);
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 24),
+                GridView.builder(
+  shrinkWrap: true,
+  physics: const NeverScrollableScrollPhysics(),
+  itemCount: SiteType.values.length,
+  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: siteTypeColumns,
+    crossAxisSpacing: 10,
+    mainAxisSpacing: 10,
+    mainAxisExtent: 165,
+  ),
+  itemBuilder: (context, index) {
+    final type = SiteType.values[index];
+    final count = _stats.countsByType[type] ?? 0;
+    final pct = totalTypeCount == 0
+        ? 0.0
+        : (count / totalTypeCount) * 100;
+
+    return SiteTypeCard(
+      type: type,
+      count: count,
+      percentage: pct,
+    );
+  },
+),
+                  const SizedBox(height: 40),
 
                   // --- Recent registrations ---
                   SectionHeader(title: 'Recent Registrations', actionLabel: 'View All', onAction: () {}),

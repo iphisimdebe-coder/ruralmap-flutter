@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_theme.dart';
 
-/// A single tile in the "Quick Actions" grid. Can be rendered as a
-/// highlighted (filled) primary action or a plain outlined action.
+/// Responsive Quick Action button used on the dashboard.
 class QuickActionButton extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -21,9 +21,28 @@ class QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
+    final isSmall = width < 360;
+    final isTablet = width >= 700;
+
     final bg = highlighted ? AppColors.primary : AppColors.surface;
     final fg = highlighted ? Colors.white : AppColors.primary;
-    final subFg = highlighted ? Colors.white70 : AppColors.textSecondary;
+    final subFg =
+        highlighted ? Colors.white70 : AppColors.textSecondary;
+
+    final padding = isSmall ? 10.0 : 14.0;
+    final iconSize = isTablet
+        ? 30.0
+        : isSmall
+            ? 22.0
+            : 26.0;
+
+    final avatarRadius = isTablet
+        ? 20.0
+        : isSmall
+            ? 14.0
+            : 16.0;
 
     return Material(
       color: bg,
@@ -32,28 +51,66 @@ class QuickActionButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+          padding: EdgeInsets.all(padding),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: highlighted ? null : Border.all(color: AppColors.divider),
+            border: highlighted
+                ? null
+                : Border.all(color: AppColors.divider),
           ),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               highlighted
                   ? CircleAvatar(
-                      radius: 16,
+                      radius: avatarRadius,
                       backgroundColor: Colors.white,
-                      child: Icon(icon, color: AppColors.primary, size: 18),
+                      child: Icon(
+                        icon,
+                        color: AppColors.primary,
+                        size: iconSize - 6,
+                      ),
                     )
-                  : Icon(icon, color: fg, size: 26),
-              const SizedBox(height: 10),
-              Text(title,
-                  style: TextStyle(
-                      color: highlighted ? Colors.white : AppColors.textPrimary,
+                  : Icon(
+                      icon,
+                      color: fg,
+                      size: iconSize,
+                    ),
+
+              SizedBox(height: isSmall ? 6 : 10),
+
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    style: TextStyle(
+                      color: highlighted
+                          ? Colors.white
+                          : AppColors.textPrimary,
                       fontWeight: FontWeight.w600,
-                      fontSize: 14)),
-              const SizedBox(height: 2),
-              Text(subtitle, style: TextStyle(color: subFg, fontSize: 12)),
+                      fontSize: isSmall ? 12 : 14,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              Flexible(
+                child: Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: subFg,
+                    fontSize: isSmall ? 10 : 12,
+                  ),
+                ),
+              ),
             ],
           ),
         ),

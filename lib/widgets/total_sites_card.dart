@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// The large dark-green hero card showing the total number of sites
-/// registered, the delta for today, and three mini-stats.
-///
-/// Fully data-driven so it can be reused for other summary metrics too.
 class TotalSitesCard extends StatelessWidget {
   final int total;
   final int deltaToday;
@@ -23,9 +19,12 @@ class TotalSitesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmall = screenWidth < 360;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isSmall ? 16 : 20),
       decoration: BoxDecoration(
         color: AppColors.primary,
         borderRadius: BorderRadius.circular(20),
@@ -33,39 +32,83 @@ class TotalSitesCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Total Sites Registered',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: isSmall ? 13 : 14,
+            ),
           ),
+
           const SizedBox(height: 6),
+
           Text(
             '$total',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 40,
+              fontSize: isSmall ? 34 : 40,
               fontWeight: FontWeight.bold,
             ),
           ),
+
           const SizedBox(height: 4),
+
           Row(
             children: [
-              const Icon(Icons.arrow_upward, color: Colors.greenAccent, size: 14),
+              const Icon(
+                Icons.arrow_upward,
+                color: Colors.greenAccent,
+                size: 14,
+              ),
               const SizedBox(width: 4),
-              Text(
-                '+$deltaToday today',
-                style: const TextStyle(color: Colors.greenAccent, fontSize: 13),
+              Flexible(
+                child: Text(
+                  '+$deltaToday today',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.greenAccent,
+                    fontSize: isSmall ? 12 : 13,
+                  ),
+                ),
               ),
             ],
           ),
+
           const SizedBox(height: 18),
-          Container(height: 1, color: Colors.white24),
-          const SizedBox(height: 14),
+
+          Container(
+            height: 1,
+            color: Colors.white24,
+          ),
+
+          const SizedBox(height: 16),
+
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _MiniStat(icon: Icons.calendar_today_outlined, label: 'Today', value: '$today'),
-              _MiniStat(icon: Icons.access_time, label: 'This Week', value: '$thisWeek'),
-              _MiniStat(icon: Icons.location_on_outlined, label: 'Villages', value: '$villages'),
+              Expanded(
+                child: _MiniStat(
+                  icon: Icons.calendar_today_outlined,
+                  label: 'Today',
+                  value: '$today',
+                  isSmall: isSmall,
+                ),
+              ),
+              Expanded(
+                child: _MiniStat(
+                  icon: Icons.access_time,
+                  label: 'This Week',
+                  value: '$thisWeek',
+                  isSmall: isSmall,
+                ),
+              ),
+              Expanded(
+                child: _MiniStat(
+                  icon: Icons.location_on_outlined,
+                  label: 'Villages',
+                  value: '$villages',
+                  isSmall: isSmall,
+                ),
+              ),
             ],
           ),
         ],
@@ -78,23 +121,58 @@ class _MiniStat extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+  final bool isSmall;
 
-  const _MiniStat({required this.icon, required this.label, required this.value});
+  const _MiniStat({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.isSmall,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: Colors.white70, size: 18),
-        const SizedBox(height: 6),
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: Colors.white70,
+            size: isSmall ? 16 : 18,
+          ),
+
+          const SizedBox(height: 6),
+
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: isSmall ? 10 : 12,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 2),
+
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: isSmall ? 16 : 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
