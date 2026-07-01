@@ -63,7 +63,9 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     final pos = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.best,
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.best,
+      ),
     );
 
     _currentLocation = LatLng(
@@ -115,9 +117,6 @@ class _MapScreenState extends State<MapScreen> {
 
       case SiteType.church:
         return Colors.purple;
-
-      default:
-        return Colors.red;
     }
   }
 

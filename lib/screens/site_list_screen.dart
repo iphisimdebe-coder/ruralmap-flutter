@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../database/db_helper.dart';
 import '../models/site.dart';
-import '../widgets/app_top_bar.dart';
 
 class SiteListScreen extends StatefulWidget {
   const SiteListScreen({super.key});
@@ -61,7 +60,7 @@ class _SiteListScreenState extends State<SiteListScreen> {
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       itemCount: _sites.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      separatorBuilder: (_, index) => const SizedBox(height: 8),
                       itemBuilder: (_, index) {
                         final site = _sites[index];
                         return Card(

@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import '../database/db_helper.dart';
 import '../models/site.dart';
 import '../theme/app_theme.dart';
-import '../widgets/app_bottom_nav.dart';
 import '../widgets/quick_action_button.dart';
 import '../widgets/recent_registration_tile.dart';
 import '../widgets/section_header.dart';
@@ -33,7 +32,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   DashboardStats _stats = DashboardStats.empty();
   List<Site> _recent = [];
   bool _loading = true;
-  int _navIndex = 0;
 
   @override
   void initState() {

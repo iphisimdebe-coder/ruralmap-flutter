@@ -76,7 +76,11 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
         return;
       }
 
-      final position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
       final placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
       final place = placemarks.isNotEmpty ? placemarks.first : null;
       final addressParts = [
@@ -85,7 +89,7 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
         place?.locality,
         place?.administrativeArea,
         place?.country,
-      ].whereType<String>().where((value) => value.trim().isNotEmpty).toList();
+      ].whereType<String>().where((value) => value.trim().isNotEmpty);
       final resolvedAddress = addressParts.join(', ');
 
       setState(() {
@@ -123,6 +127,7 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
         _photoLoading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() => _photoLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Photo capture failed.')));
     }
@@ -136,6 +141,7 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
 
     final url = Uri.parse('https://www.openstreetmap.org/?mlat=$_latitude&mlon=$_longitude&zoom=16');
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open OpenStreetMap.')));
     }
   }
@@ -314,7 +320,7 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
