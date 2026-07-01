@@ -101,6 +101,7 @@ final siteTypeColumns = screenWidth >= 900
         : screenWidth >= 500
             ? 4
             : 2;
+    
     return Scaffold(
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -147,7 +148,7 @@ final siteTypeColumns = screenWidth >= 900
                   SectionHeader(title: 'Quick Actions', actionLabel: 'Customise', actionIcon: Icons.settings_outlined, onAction: () {}),
                   const SizedBox(height: 12),
                   GridView.count(
-                    crossAxisCount: 3,
+                    crossAxisCount: quickActionColumns,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     mainAxisSpacing: 12,
