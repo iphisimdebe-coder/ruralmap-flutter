@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/auth_provider.dart';
+import 'profile_edit_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -9,7 +13,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-
   String version = "";
 
   @override
@@ -21,6 +24,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> loadVersion() async {
     final info = await PackageInfo.fromPlatform();
 
+    if (!mounted) return;
     setState(() {
       version = info.version;
     });
@@ -50,27 +54,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 const SizedBox(height:12),
 
-                const Text(
-                  "Mdebe iPhisi",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize:20,
-                  ),
-                ),
-
-                const SizedBox(height:4),
-
-                Text(
-                  "Ward 08 •  iPhisi",
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                  ),
+                Consumer<AuthProvider>(
+                  builder: (context, auth, child) {
+                    final user = auth.user;
+                    return Column(
+                      children: [
+                        Text(
+                          user?.name ?? 'Enumerator',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          user == null
+                              ? 'No account details available'
+                              : '${user.role} • ${user.phone}',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
 
                 const SizedBox(height:16),
 
                 FilledButton.icon(
-                  onPressed: (){},
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    final updated = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(builder: (_) => const ProfileEditScreen()),
+                    );
+                    if (mounted && updated == true) {
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text('Profile updated successfully.')),
+                      );
+                    }
+                  },
                   icon: const Icon(Icons.edit),
                   label: const Text("Edit Profile"),
                 )
@@ -298,19 +321,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height:20),
 
         FilledButton.icon(
-
           style: FilledButton.styleFrom(
-
             backgroundColor: Colors.red,
-
           ),
-
-          onPressed: () {},
-
+          onPressed: () async {
+            await context.read<AuthProvider>().logout();
+          },
           icon: const Icon(Icons.logout),
-
           label: const Text("Logout"),
-
         ),
 
         const SizedBox(height:40),
