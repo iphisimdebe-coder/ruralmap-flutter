@@ -12,6 +12,17 @@ import '../database/db_helper.dart';
 import '../models/site.dart';
 import '../theme/app_theme.dart';
 
+import '../wizard_steps/site_type_step.dart';
+import '../wizard_steps/gps_capture_step.dart';
+import '../wizard_steps/photo_capture_step.dart';
+import '../wizard_steps/site_info_step.dart';
+import '../wizard_steps/household_info_step.dart';
+import '../wizard_steps/services_step.dart';
+import '../wizard_steps/review_step.dart';
+
+/// Wizard shell for registering a new site. Owns all shared state
+/// (controllers, GPS/photo results, current step) and delegates rendering
+/// of each step to a dedicated widget in `wizard_steps/`.
 class RegisterSiteScreen extends StatefulWidget {
   const RegisterSiteScreen({super.key});
 
@@ -20,6 +31,8 @@ class RegisterSiteScreen extends StatefulWidget {
 }
 
 class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
+  static const int _stepCount = 7;
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _villageController = TextEditingController();
@@ -30,6 +43,16 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
   final _phoneController = TextEditingController();
   final _notesController = TextEditingController();
   final _addressController = TextEditingController();
+  // Additional controllers used by SiteInfoStep
+  final _siteCodeController = TextEditingController();
+  final _provinceController = TextEditingController();
+  final _districtController = TextEditingController();
+  final _municipalityController = TextEditingController();
+  final _wardController = TextEditingController();
+  final _traditionalAuthorityController = TextEditingController();
+  final _sectionController = TextEditingController();
+  final _distanceController = TextEditingController();
+  final _directionsController = TextEditingController();
 
   SiteType _selectedType = SiteType.house;
   int _currentStep = 0;
@@ -53,8 +76,21 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
     _phoneController.dispose();
     _notesController.dispose();
     _addressController.dispose();
+    _siteCodeController.dispose();
+    _provinceController.dispose();
+    _districtController.dispose();
+    _municipalityController.dispose();
+    _wardController.dispose();
+    _traditionalAuthorityController.dispose();
+    _sectionController.dispose();
+    _distanceController.dispose();
+    _directionsController.dispose();
     super.dispose();
   }
+
+  // ---------------------------------------------------------------------
+  // Actions
+  // ---------------------------------------------------------------------
 
   Future<void> _captureLocation() async {
     setState(() => _gpsLoading = true);
@@ -62,7 +98,10 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        setState(() => _gpsStatus = 'Location services are disabled.');
+        setState(() {
+          _gpsLoading = false;
+          _gpsStatus = 'Location services are disabled.';
+        });
         return;
       }
 
@@ -72,7 +111,10 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
       }
 
       if (permission == LocationPermission.deniedForever || permission == LocationPermission.denied) {
-        setState(() => _gpsStatus = 'Location permission was not granted.');
+        setState(() {
+          _gpsLoading = false;
+          _gpsStatus = 'Location permission was not granted.';
+        });
         return;
       }
 
@@ -146,6 +188,20 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
     }
   }
 
+  void _toggleService(String service) {
+    setState(() {
+      if (_services.contains(service)) {
+        _services.remove(service);
+      } else {
+        _services.add(service);
+      }
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // Navigation / validation
+  // ---------------------------------------------------------------------
+
   bool _validateStep() {
     switch (_currentStep) {
       case 0:
@@ -181,11 +237,11 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
 
   void _nextStep() {
     if (!_validateStep()) return;
-    setState(() => _currentStep = (_currentStep + 1).clamp(0, 6));
+    setState(() => _currentStep = (_currentStep + 1).clamp(0, _stepCount - 1));
   }
 
   void _previousStep() {
-    setState(() => _currentStep = (_currentStep - 1).clamp(0, 6));
+    setState(() => _currentStep = (_currentStep - 1).clamp(0, _stepCount - 1));
   }
 
   Future<void> _saveSite() async {
@@ -208,12 +264,16 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
       householdSize: householdSize,
       phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
       services: _services.isEmpty ? null : _services.join(', '),
-      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(), siteCode: '', province: '', district: '', municipality: '', ward: '', traditionalAuthority: '', section: '', directions: '',
     );
 
     await DBHelper.instance.insertSite(site);
     if (mounted) Navigator.pop(context, true);
   }
+
+  // ---------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -230,12 +290,12 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
             child: Column(
               children: [
                 LinearProgressIndicator(
-                  value: (_currentStep + 1) / 7,
+                  value: (_currentStep + 1) / _stepCount,
                   backgroundColor: AppColors.divider,
                   color: AppColors.primary,
                 ),
                 const SizedBox(height: 10),
-                Text('Step ${_currentStep + 1} of 7', style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text('Step ${_currentStep + 1} of $_stepCount', style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 12),
                 Expanded(child: _buildStep()),
                 const SizedBox(height: 12),
@@ -251,14 +311,18 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
                     if (_currentStep > 0) const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _currentStep == 6 ? _saveSite : _nextStep,
+                        onPressed: _currentStep == _stepCount - 1 ? _saveSite : _nextStep,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                         ),
                         child: _saving
-                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : Text(_currentStep == 6 ? 'Save Site' : 'Continue'),
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : Text(_currentStep == _stepCount - 1 ? 'Save Site' : 'Continue'),
                       ),
                     ),
                   ],
@@ -274,261 +338,64 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
   Widget _buildStep() {
     switch (_currentStep) {
       case 0:
-        return _buildStepOne();
+        return SiteTypeStep(
+          selectedType: _selectedType,
+          onTypeSelected: (type) => setState(() => _selectedType = type),
+        );
       case 1:
-        return _buildStepTwo();
+        return GpsCaptureStep(
+          latitude: _latitude,
+          longitude: _longitude,
+          addressController: _addressController,
+          gpsStatus: _gpsStatus,
+          gpsLoading: _gpsLoading,
+          onCapture: _captureLocation,
+          onOpenMap: _openOsmMap,
+        );
       case 2:
-        return _buildStepThree();
+        return PhotoCaptureStep(
+          photoPath: _photoPath,
+          photoLoading: _photoLoading,
+          onCapturePhoto: _capturePhoto,
+        );
       case 3:
-        return _buildStepFour();
+        return SiteInfoStep(
+          siteNameController: _nameController,
+          siteCodeController: _siteCodeController,
+          provinceController: _provinceController,
+          districtController: _districtController,
+          municipalityController: _municipalityController,
+          wardController: _wardController,
+          traditionalAuthorityController: _traditionalAuthorityController,
+          villageController: _villageController,
+          sectionController: _sectionController,
+          landmarkController: _landmarkController,
+          distanceController: _distanceController,
+          addressController: _addressController,
+          directionsController: _directionsController,
+        );
       case 4:
-        return _buildStepFive();
+        return HouseholdInfoStep(
+          householdHeadController: _householdHeadController,
+          householdSizeController: _householdSizeController,
+          phoneController: _phoneController,
+        );
       case 5:
-        return _buildStepSix();
+        return ServicesStep(
+          services: _services,
+          notesController: _notesController,
+          onToggleService: _toggleService,
+        );
       default:
-        return _buildStepSeven();
+        return ReviewStep(
+          selectedType: _selectedType,
+          name: _nameController.text.trim(),
+          village: _villageController.text.trim(),
+          address: _addressController.text.trim(),
+          householdHead: _householdHeadController.text.trim(),
+          services: _services,
+          photoPath: _photoPath,
+        );
     }
-  }
-
-  Widget _buildStepOne() {
-    return ListView(
-      children: [
-        const Text('Choose Site Type', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        const Text('Select the primary type of site you are registering.'),
-        const SizedBox(height: 16),
-        ...SiteType.values.map((type) {
-          final selected = _selectedType == type;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: InkWell(
-              onTap: () => setState(() => _selectedType = type),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: selected ? AppColors.primary : AppColors.divider),
-                  color: selected ? AppColors.houseBg : AppColors.surface,
-                ),
-                child: Row(
-                  children: [
-                    Icon(selected ? Icons.radio_button_checked : Icons.radio_button_off, color: selected ? AppColors.primary : AppColors.textSecondary),
-                    const SizedBox(width: 12),
-                    Text(type.label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  Widget _buildStepTwo() {
-    return ListView(
-      children: [
-        const Text('GPS Capture (OpenStreetMap)', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        const Text('Capture the site location automatically and reverse geocode the address.'),
-        const SizedBox(height: 16),
-        ElevatedButton.icon(
-          onPressed: _gpsLoading ? null : _captureLocation,
-          icon: _gpsLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.gps_fixed),
-          label: const Text('Use Current Location'),
-        ),
-        const SizedBox(height: 12),
-        if (_latitude != null && _longitude != null)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Latitude: $_latitude'),
-                  Text('Longitude: $_longitude'),
-                  const SizedBox(height: 8),
-                  Text(_addressController.text.isEmpty ? 'Address pending' : _addressController.text),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: _openOsmMap,
-                    icon: const Icon(Icons.map_outlined),
-                    label: const Text('Open in OpenStreetMap'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        const SizedBox(height: 8),
-        Text(_gpsStatus, style: const TextStyle(color: AppColors.textSecondary)),
-      ],
-    );
-  }
-
-  Widget _buildStepThree() {
-    return ListView(
-      children: [
-        const Text('Capture Site Photos', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        const Text('Take a clear photo of the site for the offline record.'),
-        const SizedBox(height: 16),
-        ElevatedButton.icon(
-          onPressed: _photoLoading ? null : _capturePhoto,
-          icon: _photoLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.camera_alt),
-          label: const Text('Take Photo'),
-        ),
-        const SizedBox(height: 16),
-        if (_photoPath != null)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Image.file(File(_photoPath!), fit: BoxFit.cover, height: 220),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildStepFour() {
-    return ListView(
-      children: [
-        const Text('Site Information', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        const Text('Record the site identity and basic location details.'),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _nameController,
-          decoration: const InputDecoration(labelText: 'Site / Household Name', border: OutlineInputBorder()),
-          validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
-        ),
-        const SizedBox(height: 12),
-        TextFormField(
-          controller: _villageController,
-          decoration: const InputDecoration(labelText: 'Village', border: OutlineInputBorder()),
-          validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
-        ),
-        const SizedBox(height: 12),
-        TextFormField(
-          controller: _landmarkController,
-          decoration: const InputDecoration(labelText: 'Landmark', border: OutlineInputBorder()),
-        ),
-        const SizedBox(height: 12),
-        TextFormField(
-          controller: _descriptionController,
-          maxLines: 3,
-          decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStepFive() {
-    return ListView(
-      children: [
-        const Text('Household Information', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        const Text('Capture the household head, size, and contact information.'),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _householdHeadController,
-          decoration: const InputDecoration(labelText: 'Household Head', border: OutlineInputBorder()),
-          validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
-        ),
-        const SizedBox(height: 12),
-        TextFormField(
-          controller: _householdSizeController,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Household Size', border: OutlineInputBorder()),
-          validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
-        ),
-        const SizedBox(height: 12),
-        TextFormField(
-          controller: _phoneController,
-          keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(labelText: 'Phone Number', border: OutlineInputBorder()),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStepSix() {
-    return ListView(
-      children: [
-        const Text('Services & Infrastructure', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        const Text('Select the services available at the site.'),
-        const SizedBox(height: 16),
-        CheckboxListTile(
-          value: _services.contains('Water'),
-          title: const Text('Water Supply'),
-          onChanged: (value) => setState(() {
-            if (value == true) {
-              _services.add('Water');
-            } else {
-              _services.remove('Water');
-            }
-          }),
-        ),
-        CheckboxListTile(
-          value: _services.contains('Electricity'),
-          title: const Text('Electricity'),
-          onChanged: (value) => setState(() {
-            if (value == true) {
-              _services.add('Electricity');
-            } else {
-              _services.remove('Electricity');
-            }
-          }),
-        ),
-        CheckboxListTile(
-          value: _services.contains('Sanitation'),
-          title: const Text('Sanitation'),
-          onChanged: (value) => setState(() {
-            if (value == true) {
-              _services.add('Sanitation');
-            } else {
-              _services.remove('Sanitation');
-            }
-          }),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: _notesController,
-          maxLines: 3,
-          decoration: const InputDecoration(labelText: 'Notes', border: OutlineInputBorder()),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStepSeven() {
-    return ListView(
-      children: [
-        const Text('Review', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        const Text('Everything looks ready to save locally.'),
-        const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Site Type: ${_selectedType.label}'),
-                Text('Site Name: ${_nameController.text.trim()}'),
-                Text('Village: ${_villageController.text.trim()}'),
-                Text('Address: ${_addressController.text.trim().isEmpty ? "Not captured" : _addressController.text.trim()}'),
-                Text('Household Head: ${_householdHeadController.text.trim().isEmpty ? "Not captured" : _householdHeadController.text.trim()}'),
-                Text('Services: ${_services.isEmpty ? "None" : _services.join(", ")}'),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (_photoPath != null)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Image.file(File(_photoPath!), fit: BoxFit.cover, height: 220),
-          ),
-      ],
-    );
   }
 }

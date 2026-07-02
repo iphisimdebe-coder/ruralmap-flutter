@@ -61,6 +61,15 @@ class DBHelper {
 
         services TEXT,
         notes TEXT
+        site_code TEXT,
+province TEXT,
+district TEXT,
+municipality TEXT,
+ward TEXT,
+traditional_authority TEXT,
+section TEXT,
+distance_from_landmark REAL,
+directions TEXT
       )
     ''');
   }
@@ -318,7 +327,7 @@ class DBHelper {
         name: 'Dlamini Residence',
         village: 'KwaMbonambi',
         type: SiteType.house,
-        registeredAt: now,
+        registeredAt: now, siteCode: '', province: '', district: '', municipality: '', ward: '', traditionalAuthority: '', section: '', directions: '',
       ),
       Site(
         name: 'Thandi Spaza Shop',
@@ -326,7 +335,7 @@ class DBHelper {
         type: SiteType.business,
         registeredAt: now.subtract(
           const Duration(minutes: 15),
-        ),
+        ), siteCode: '', province: '', district: '', municipality: '', ward: '', traditionalAuthority: '', section: '', directions: '',
       ),
       Site(
         name: 'Zion Christian Church',
@@ -334,7 +343,7 @@ class DBHelper {
         type: SiteType.church,
         registeredAt: now.subtract(
           const Duration(minutes: 30),
-        ),
+        ), siteCode: '', province: '', district: '', municipality: '', ward: '', traditionalAuthority: '', section: '', directions: '',
       ),
       Site(
         name: 'Ulundi Primary School',
@@ -342,7 +351,7 @@ class DBHelper {
         type: SiteType.school,
         registeredAt: now.subtract(
           const Duration(hours: 1),
-        ),
+        ), siteCode: '', province: '', district: '', municipality: '', ward: '', traditionalAuthority: '', section: '', directions: '',
       ),
     ];
 

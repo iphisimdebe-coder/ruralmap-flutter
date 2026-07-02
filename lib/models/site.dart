@@ -43,25 +43,48 @@ class Site {
   final String? phoneNumber;
   final String? services;
   final String? notes;
+  final String siteCode;
+final String province;
+final String district;
+final String municipality;
+final String ward;
+final String traditionalAuthority;
+final String section;
+final String directions;
+final double? distanceFromLandmark;
 
-  const Site({
-    this.id,
-    required this.name,
-    required this.village,
-    required this.type,
-    required this.registeredAt,
-    this.imagePath,
-    this.latitude,
-    this.longitude,
-    this.address,
-    this.landmark,
-    this.description,
-    this.householdHead,
-    this.householdSize,
-    this.phoneNumber,
-    this.services,
-    this.notes,
-  });
+const Site({
+  this.id,
+
+  required this.siteCode,
+  required this.name,
+  required this.province,
+  required this.district,
+  required this.municipality,
+  required this.ward,
+  required this.traditionalAuthority,
+  required this.village,
+  required this.section,
+
+  required this.type,
+  required this.registeredAt,
+
+  this.imagePath,
+  this.latitude,
+  this.longitude,
+
+  this.address,
+  this.landmark,
+  this.distanceFromLandmark,
+  required this.directions,
+
+  this.description,
+  this.householdHead,
+  this.householdSize,
+  this.phoneNumber,
+  this.services,
+  this.notes,
+});
 
   Site copyWith({
     int? id,
@@ -97,7 +120,7 @@ class Site {
       householdSize: householdSize ?? this.householdSize,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       services: services ?? this.services,
-      notes: notes ?? this.notes,
+      notes: notes ?? this.notes, siteCode: '', province: '', district: '', municipality: '', ward: '', traditionalAuthority: '', section: '', directions: '',
     );
   }
 
@@ -139,7 +162,7 @@ class Site {
       householdSize: map['household_size'] as int?,
       phoneNumber: map['phone_number'] as String?,
       services: map['services'] as String?,
-      notes: map['notes'] as String?,
+      notes: map['notes'] as String?, siteCode: '', province: '', district: '', municipality: '', ward: '', traditionalAuthority: '', section: '', directions: '',
     );
   }
 }

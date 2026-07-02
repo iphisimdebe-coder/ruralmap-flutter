@@ -51,7 +51,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height:12),
 
                 const Text(
-                  "John Enumerator",
+                  "Mdebe iPhisi",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize:20,
@@ -61,7 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height:4),
 
                 Text(
-                  "Ward 08 • Enumerator",
+                  "Ward 08 •  iPhisi",
                   style: TextStyle(
                     color: Colors.grey.shade600,
                   ),
