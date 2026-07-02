@@ -88,7 +88,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
         ),
         const SiteListScreen(),
         const SizedBox.shrink(),
-        const MapScreen(),
+        MapScreen(refreshToken: _refreshToken),
         const ReportsScreen(),
         const ProfileScreen(),
       ]),

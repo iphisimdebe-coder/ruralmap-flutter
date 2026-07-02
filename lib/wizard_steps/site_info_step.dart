@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 /// Step 4 — Collects basic site identity and administrative location.
-class SiteInfoStep extends StatelessWidget {
+class SiteInfoStep extends StatefulWidget {
   final TextEditingController siteNameController;
   final TextEditingController siteCodeController;
 
@@ -36,6 +37,220 @@ class SiteInfoStep extends StatelessWidget {
   });
 
   @override
+  State<SiteInfoStep> createState() => _SiteInfoStepState();
+
+}
+
+class _SiteInfoStepState extends State<SiteInfoStep> {
+  static const List<String> provinces = [
+    'KwaZulu-Natal',
+  ];
+
+  /// District Municipalities
+  static const Map<String, List<String>> districtsByProvince = {
+    'KwaZulu-Natal': [
+      'Amajuba',
+      'eThekwini Metro',
+      'Harry Gwala',
+      'iLembe',
+      'King Cetshwayo',
+      'Ugu',
+      'uMgungundlovu',
+      'uMkhanyakude',
+      'uMzinyathi',
+      'uThukela',
+      'uThungulu',
+      'Zululand',
+    ],
+  };
+
+  /// Local Municipalities
+  static const Map<String, List<String>> municipalitiesByDistrict = {
+    'Amajuba': [
+      'Newcastle',
+      'Dannhauser',
+      'eMadlangeni',
+    ],
+
+    'eThekwini Metro': [
+      'eThekwini',
+    ],
+
+    'Harry Gwala': [
+      'Dr Nkosazana Dlamini Zuma',
+      'Greater Kokstad',
+      'Ubuhlebezwe',
+      'uMzimkhulu',
+    ],
+
+    'iLembe': [
+      'KwaDukuza',
+      'Mandeni',
+      'Maphumulo',
+      'Ndwedwe',
+    ],
+
+    'King Cetshwayo': [
+      'City of uMhlathuze',
+      'Mthonjaneni',
+      'Nkandla',
+      'uMfolozi',
+      'uMlalazi',
+    ],
+
+    'Ugu': [
+      'Hibiscus Coast',
+      'Umuziwabantu',
+      'uMdoni',
+      'uMuziwabantu',
+      'Ray Nkonyeni',
+    ],
+
+    'uMgungundlovu': [
+      'Msunduzi',
+      'uMngeni',
+      'Mpofana',
+      'Mkhambathini',
+      'Richmond',
+      'Impendle',
+      'uMshwathi',
+    ],
+
+    'uMkhanyakude': [
+      'Jozini',
+      'Big Five Hlabisa',
+      'Mtubatuba',
+      'The Big Five False Bay',
+      'uMhlabuyalingana',
+    ],
+
+    'uMzinyathi': [
+      'Endumeni',
+      'Nquthu',
+      'Msinga',
+      'uMvoti',
+    ],
+
+    'uThukela': [
+      'Alfred Duma',
+      'Inkosi Langalibalele',
+      'Okhahlamba',
+    ],
+
+    'uThungulu': [
+      'Mandeni',
+      'Mthonjaneni',
+      'Nkandla',
+      'uMlalazi',
+      'City of uMhlathuze',
+    ],
+
+    'Zululand': [
+      'AbaQulusi',
+      'eDumbe',
+      'Nongoma',
+      'Phongolo',
+      'Ulundi',
+      'uPhongolo',
+    ],
+  };
+
+  /// Example ward data
+  /// (Replace with actual IEC ward lists if required.)
+  static const Map<String, List<String>> wardsByMunicipality = {
+    'eThekwini': [
+      'Ward 1',
+      'Ward 2',
+      'Ward 3',
+      'Ward 4',
+      'Ward 5',
+      'Ward 6',
+      'Ward 7',
+      'Ward 8',
+      'Ward 9',
+      'Ward 10',
+    ],
+
+    'Msunduzi': [
+      'Ward 1',
+      'Ward 2',
+      'Ward 3',
+      'Ward 4',
+      'Ward 5',
+      'Ward 6',
+      'Ward 7',
+    ],
+
+    'uMngeni': [
+      'Ward 1',
+      'Ward 2',
+      'Ward 3',
+      'Ward 4',
+    ],
+
+    'Newcastle': [
+      'Ward 1',
+      'Ward 2',
+      'Ward 3',
+      'Ward 4',
+      'Ward 5',
+    ],
+
+    'KwaDukuza': [
+      'Ward 1',
+      'Ward 2',
+      'Ward 3',
+      'Ward 4',
+      'Ward 5',
+    ],
+
+    'Ray Nkonyeni': [
+      'Ward 1',
+      'Ward 2',
+      'Ward 3',
+      'Ward 4',
+    ],
+
+    'City of uMhlathuze': [
+      'Ward 1',
+      'Ward 2',
+      'Ward 3',
+      'Ward 4',
+      'Ward 5',
+      'Ward 6',
+    ],
+  };
+
+  String? _selectedProvince;
+  String? _selectedDistrict;
+  String? _selectedMunicipality;
+  String? _selectedWard;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedProvince = widget.provinceController.text.isNotEmpty ? widget.provinceController.text : null;
+    _selectedDistrict = widget.districtController.text.isNotEmpty ? widget.districtController.text : null;
+    _selectedMunicipality = widget.municipalityController.text.isNotEmpty ? widget.municipalityController.text : null;
+    _selectedWard = widget.wardController.text.isNotEmpty ? widget.wardController.text : null;
+  }
+
+  List<String> get _districtOptions {
+    if (_selectedProvince == null) return const [];
+    return districtsByProvince[_selectedProvince!] ?? const [];
+  }
+
+  List<String> get _municipalityOptions {
+    if (_selectedDistrict == null) return const [];
+    return municipalitiesByDistrict[_selectedDistrict!] ?? const [];
+  }
+
+  List<String> get _wardOptions {
+    if (_selectedMunicipality == null) return const [];
+    return wardsByMunicipality[_selectedMunicipality!] ?? const [];
+  }
+
+  @override
   Widget build(BuildContext context) {
     InputDecoration decoration(String label, {IconData? icon}) {
       return InputDecoration(
@@ -67,7 +282,7 @@ class SiteInfoStep extends StatelessWidget {
         const SizedBox(height: 24),
 
         TextFormField(
-          controller: siteNameController,
+          controller: widget.siteNameController,
           decoration: decoration(
             'Site / Household Name',
             icon: Icons.home_work_outlined,
@@ -79,7 +294,7 @@ class SiteInfoStep extends StatelessWidget {
         const SizedBox(height: 16),
 
         TextFormField(
-          controller: siteCodeController,
+          controller: widget.siteCodeController,
           readOnly: true,
           decoration: decoration(
             'Site Code',
@@ -87,7 +302,34 @@ class SiteInfoStep extends StatelessWidget {
           ),
         ),
 
-        const SizedBox(height: 24),
+        if (widget.siteCodeController.text.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Center(
+            child: Card(
+              elevation: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: QrImageView(
+                  data: widget.siteCodeController.text,
+                  version: QrVersions.auto,
+                  size: 160,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              'Digital ID: ${widget.siteCodeController.text}',
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
 
         const Text(
           'Administrative Area',
@@ -99,48 +341,116 @@ class SiteInfoStep extends StatelessWidget {
 
         const SizedBox(height: 16),
 
-        TextFormField(
-          controller: provinceController,
+        DropdownButtonFormField<String>(
+          initialValue: _selectedProvince,
           decoration: decoration(
             'Province',
             icon: Icons.map_outlined,
           ),
+          items: provinces
+              .map((province) => DropdownMenuItem(
+                    value: province,
+                    child: Text(province),
+                  ))
+              .toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedProvince = value;
+              _selectedDistrict = null;
+              _selectedMunicipality = null;
+              _selectedWard = null;
+              widget.provinceController.text = value ?? '';
+              widget.districtController.clear();
+              widget.municipalityController.clear();
+              widget.wardController.clear();
+            });
+          },
+          validator: (value) =>
+              value == null || value.isEmpty ? 'Required' : null,
         ),
 
         const SizedBox(height: 12),
 
-        TextFormField(
-          controller: districtController,
+        DropdownButtonFormField<String>(
+          initialValue: _selectedDistrict,
           decoration: decoration(
             'District',
             icon: Icons.location_city_outlined,
           ),
+          items: _districtOptions
+              .map((district) => DropdownMenuItem(
+                    value: district,
+                    child: Text(district),
+                  ))
+              .toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedDistrict = value;
+              _selectedMunicipality = null;
+              _selectedWard = null;
+              widget.districtController.text = value ?? '';
+              widget.municipalityController.clear();
+              widget.wardController.clear();
+            });
+          },
+          validator: (value) =>
+              value == null || value.isEmpty ? 'Required' : null,
         ),
 
         const SizedBox(height: 12),
 
-        TextFormField(
-          controller: municipalityController,
+        DropdownButtonFormField<String>(
+          initialValue: _selectedMunicipality,
           decoration: decoration(
             'Municipality',
             icon: Icons.account_balance_outlined,
           ),
+          items: _municipalityOptions
+              .map((municipality) => DropdownMenuItem(
+                    value: municipality,
+                    child: Text(municipality),
+                  ))
+              .toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedMunicipality = value;
+              _selectedWard = null;
+              widget.municipalityController.text = value ?? '';
+              widget.wardController.clear();
+            });
+          },
+          validator: (value) =>
+              value == null || value.isEmpty ? 'Required' : null,
         ),
 
         const SizedBox(height: 12),
 
-        TextFormField(
-          controller: wardController,
+        DropdownButtonFormField<String>(
+          initialValue: _selectedWard,
           decoration: decoration(
             'Ward',
             icon: Icons.pin_drop_outlined,
           ),
+          items: _wardOptions
+              .map((ward) => DropdownMenuItem(
+                    value: ward,
+                    child: Text(ward),
+                  ))
+              .toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedWard = value;
+              widget.wardController.text = value ?? '';
+            });
+          },
+          validator: (value) =>
+              value == null || value.isEmpty ? 'Required' : null,
         ),
 
         const SizedBox(height: 12),
 
         TextFormField(
-          controller: traditionalAuthorityController,
+          controller: widget.traditionalAuthorityController,
           decoration: decoration(
             'Traditional Authority',
             icon: Icons.groups_outlined,
@@ -150,7 +460,7 @@ class SiteInfoStep extends StatelessWidget {
         const SizedBox(height: 12),
 
         TextFormField(
-          controller: villageController,
+          controller: widget.villageController,
           decoration: decoration(
             'Village',
             icon: Icons.location_on_outlined,
@@ -162,7 +472,7 @@ class SiteInfoStep extends StatelessWidget {
         const SizedBox(height: 12),
 
         TextFormField(
-          controller: sectionController,
+          controller: widget.sectionController,
           decoration: decoration(
             'Section / Area',
             icon: Icons.grid_view_outlined,
@@ -182,7 +492,7 @@ class SiteInfoStep extends StatelessWidget {
         const SizedBox(height: 16),
 
         TextFormField(
-          controller: landmarkController,
+          controller: widget.landmarkController,
           decoration: decoration(
             'Nearest Landmark',
             icon: Icons.place_outlined,
@@ -192,7 +502,7 @@ class SiteInfoStep extends StatelessWidget {
         const SizedBox(height: 12),
 
         TextFormField(
-          controller: distanceController,
+          controller: widget.distanceController,
           keyboardType: TextInputType.number,
           decoration: decoration(
             'Distance from Landmark (m)',
@@ -203,7 +513,7 @@ class SiteInfoStep extends StatelessWidget {
         const SizedBox(height: 12),
 
         TextFormField(
-          controller: addressController,
+          controller: widget.addressController,
           maxLines: 2,
           decoration: decoration(
             'Physical Address',
@@ -214,7 +524,7 @@ class SiteInfoStep extends StatelessWidget {
         const SizedBox(height: 12),
 
         TextFormField(
-          controller: directionsController,
+          controller: widget.directionsController,
           maxLines: 3,
           decoration: decoration(
             'Directions to the Site',

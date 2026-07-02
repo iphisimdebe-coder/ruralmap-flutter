@@ -66,6 +66,12 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
   final List<String> _services = [];
 
   @override
+  void initState() {
+    super.initState();
+    _siteCodeController.text = 'RURA-${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _villageController.dispose();
@@ -249,9 +255,17 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
     setState(() => _saving = true);
 
     final householdSize = int.tryParse(_householdSizeController.text.trim());
+    final distanceFromLandmark = double.tryParse(_distanceController.text.trim());
     final site = Site(
+      siteCode: _siteCodeController.text,
       name: _nameController.text.trim(),
+      province: _provinceController.text.trim(),
+      district: _districtController.text.trim(),
+      municipality: _municipalityController.text.trim(),
+      ward: _wardController.text.trim(),
+      traditionalAuthority: _traditionalAuthorityController.text.trim(),
       village: _villageController.text.trim(),
+      section: _sectionController.text.trim(),
       type: _selectedType,
       registeredAt: DateTime.now(),
       imagePath: _photoPath,
@@ -264,7 +278,9 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
       householdSize: householdSize,
       phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
       services: _services.isEmpty ? null : _services.join(', '),
-      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(), siteCode: '', province: '', district: '', municipality: '', ward: '', traditionalAuthority: '', section: '', directions: '',
+      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      distanceFromLandmark: distanceFromLandmark,
+      directions: _directionsController.text.trim(),
     );
 
     await DBHelper.instance.insertSite(site);

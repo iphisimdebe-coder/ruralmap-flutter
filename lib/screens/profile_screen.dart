@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
+import '../database/db_helper.dart';
 import '../providers/auth_provider.dart';
 import 'profile_edit_screen.dart';
 
@@ -30,9 +31,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  Future<void> _showMessage(String message) async {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _exportDatabase() async {
+    try {
+      final path = await DBHelper.instance.exportDatabase();
+      await _showMessage('Exported database to: $path');
+    } catch (error) {
+      await _showMessage('Export failed: ${error.toString()}');
+    }
+  }
+
+  Future<void> _backupDatabase() async {
+    try {
+      final path = await DBHelper.instance.backupDatabase();
+      await _showMessage('Backup saved to: $path');
+    } catch (error) {
+      await _showMessage('Backup failed: ${error.toString()}');
+    }
+  }
+
+  Future<void> _importDatabase() async {
+    try {
+      final restoredPath = await DBHelper.instance.restoreLatestBackup();
+      if (restoredPath == null) {
+        await _showMessage('No backup file found to import.');
+        return;
+      }
+      await _showMessage('Database restored from backup: $restoredPath');
+    } catch (error) {
+      await _showMessage('Import failed: ${error.toString()}');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-
     return ListView(
 
       padding: const EdgeInsets.all(16),
@@ -172,7 +208,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 trailing: const Icon(Icons.chevron_right),
 
-                onTap: () {},
+                onTap: _exportDatabase,
 
               ),
 
@@ -186,7 +222,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 trailing: const Icon(Icons.chevron_right),
 
-                onTap: () {},
+                onTap: _importDatabase,
 
               ),
 
@@ -200,7 +236,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 trailing: const Icon(Icons.chevron_right),
 
-                onTap: () {},
+                onTap: _backupDatabase,
 
               ),
 

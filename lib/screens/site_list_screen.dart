@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../database/db_helper.dart';
 import '../models/site.dart';
+import 'household_details_screen.dart';
 
 class SiteListScreen extends StatefulWidget {
   const SiteListScreen({super.key});
@@ -71,6 +72,11 @@ class _SiteListScreenState extends State<SiteListScreen> {
                               '${site.registeredAt.day}/${site.registeredAt.month}',
                               style: const TextStyle(fontSize: 12),
                             ),
+                            onTap: () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => HouseholdDetailsScreen(site: site),
+                              ));
+                            },
                           ),
                         );
                       },

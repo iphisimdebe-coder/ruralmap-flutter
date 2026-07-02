@@ -44,15 +44,32 @@ class AppUser {
     };
   }
 
+  static String _toString(dynamic value, {String fallback = ''}) {
+    if (value == null) return fallback;
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  static DateTime _toDateTime(dynamic value, {DateTime? fallback}) {
+    if (value is DateTime) return value;
+    if (value is String) {
+      return DateTime.tryParse(value) ?? fallback ?? DateTime.now();
+    }
+    if (value is int) {
+      return DateTime.fromMillisecondsSinceEpoch(value);
+    }
+    return fallback ?? DateTime.now();
+  }
+
   factory AppUser.fromMap(Map<String, dynamic> map) {
     return AppUser(
-      name: map['name'] as String,
-      email: map['email'] as String,
-      phone: map['phone'] as String,
-      role: map['role'] as String,
-      createdAt: DateTime.parse(map['createdAt'] as String),
+      name: _toString(map['name'], fallback: 'Enumerator'),
+      email: _toString(map['email']),
+      phone: _toString(map['phone']),
+      role: _toString(map['role'], fallback: 'Enumerator'),
+      createdAt: _toDateTime(map['createdAt']),
       lastLogin: map['lastLogin'] != null
-          ? DateTime.parse(map['lastLogin'] as String)
+          ? _toDateTime(map['lastLogin'], fallback: null)
           : null,
     );
   }

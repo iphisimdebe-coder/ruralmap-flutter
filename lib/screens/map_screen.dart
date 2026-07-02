@@ -8,7 +8,9 @@ import '../models/site.dart';
 import '../theme/app_theme.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  final int refreshToken;
+
+  const MapScreen({super.key, this.refreshToken = 0});
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -18,6 +20,7 @@ class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
 
   bool _loading = true;
+  String? _errorMessage;
 
   List<Site> _sites = [];
 
@@ -31,49 +34,74 @@ class _MapScreenState extends State<MapScreen> {
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant MapScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.refreshToken != oldWidget.refreshToken) {
+      _load();
+    }
+  }
+
   Future<void> _load() async {
-    await _loadLocation();
-
-    final sites = await DBHelper.instance.getAllSites();
-
     if (!mounted) return;
-
     setState(() {
-      _sites = sites;
-      _loading = false;
+      _loading = true;
+      _errorMessage = null;
     });
+
+    try {
+      await _loadLocation();
+      final sites = await DBHelper.instance.getAllSites();
+
+      if (!mounted) return;
+      setState(() {
+        _sites = sites;
+        _loading = false;
+      });
+    } catch (error, stack) {
+      debugPrint('MapScreen load failed: $error\n$stack');
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Unable to load map data. Please check permissions and try again.';
+        _loading = false;
+      });
+    }
   }
 
   Future<void> _loadLocation() async {
-    bool enabled = await Geolocator.isLocationServiceEnabled();
+    try {
+      bool enabled = await Geolocator.isLocationServiceEnabled();
+      if (!enabled) {
+        debugPrint('Location services disabled.');
+        return;
+      }
 
-    if (!enabled) return;
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
 
-    LocationPermission permission =
-        await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        debugPrint('Location permission denied.');
+        return;
+      }
 
-    if (permission == LocationPermission.denied) {
-      permission =
-          await Geolocator.requestPermission();
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.best,
+        ),
+      );
+
+      _currentLocation = LatLng(
+        pos.latitude,
+        pos.longitude,
+      );
+
+      _accuracy = pos.accuracy;
+    } catch (error, stack) {
+      debugPrint('MapScreen location load failed: $error\n$stack');
     }
-
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      return;
-    }
-
-    final pos = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.best,
-      ),
-    );
-
-    _currentLocation = LatLng(
-      pos.latitude,
-      pos.longitude,
-    );
-
-    _accuracy = pos.accuracy;
   }
 
   List<Marker> _buildMarkers() {
@@ -180,6 +208,33 @@ class _MapScreenState extends State<MapScreen> {
     if (_loading) {
       return const Center(
         child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline, size: 72, color: Colors.redAccent),
+                const SizedBox(height: 20),
+                Text(
+                  _errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: _load,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
     }
 

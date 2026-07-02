@@ -103,11 +103,27 @@ const Site({
     String? phoneNumber,
     String? services,
     String? notes,
+    String? siteCode,
+    String? province,
+    String? district,
+    String? municipality,
+    String? ward,
+    String? traditionalAuthority,
+    String? section,
+    String? directions,
+    double? distanceFromLandmark,
   }) {
     return Site(
       id: id ?? this.id,
+      siteCode: siteCode ?? this.siteCode,
       name: name ?? this.name,
+      province: province ?? this.province,
+      district: district ?? this.district,
+      municipality: municipality ?? this.municipality,
+      ward: ward ?? this.ward,
+      traditionalAuthority: traditionalAuthority ?? this.traditionalAuthority,
       village: village ?? this.village,
+      section: section ?? this.section,
       type: type ?? this.type,
       registeredAt: registeredAt ?? this.registeredAt,
       imagePath: imagePath ?? this.imagePath,
@@ -115,12 +131,14 @@ const Site({
       longitude: longitude ?? this.longitude,
       address: address ?? this.address,
       landmark: landmark ?? this.landmark,
+      distanceFromLandmark: distanceFromLandmark ?? this.distanceFromLandmark,
+      directions: directions ?? this.directions,
       description: description ?? this.description,
       householdHead: householdHead ?? this.householdHead,
       householdSize: householdSize ?? this.householdSize,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       services: services ?? this.services,
-      notes: notes ?? this.notes, siteCode: '', province: '', district: '', municipality: '', ward: '', traditionalAuthority: '', section: '', directions: '',
+      notes: notes ?? this.notes,
     );
   }
 
@@ -142,27 +160,86 @@ const Site({
       'phone_number': phoneNumber,
       'services': services,
       'notes': notes,
+      'site_code': siteCode,
+      'province': province,
+      'district': district,
+      'municipality': municipality,
+      'ward': ward,
+      'traditional_authority': traditionalAuthority,
+      'section': section,
+      'distance_from_landmark': distanceFromLandmark,
+      'directions': directions,
     };
+  }
+
+  static String? _toString(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  static DateTime _toDateTime(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    if (value is int) {
+      return DateTime.fromMillisecondsSinceEpoch(value);
+    }
+    return DateTime.now();
+  }
+
+  static double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  static int? _toInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  static SiteType _toSiteType(dynamic value) {
+    if (value is SiteType) return value;
+    if (value is String && value.isNotEmpty) {
+      return SiteTypeX.fromString(value);
+    }
+    return SiteType.house;
   }
 
   factory Site.fromMap(Map<String, dynamic> map) {
     return Site(
-      id: map['id'] as int?,
-      name: map['name'] as String,
-      village: map['village'] as String,
-      type: SiteTypeX.fromString(map['type'] as String),
-      registeredAt: DateTime.parse(map['registered_at'] as String),
-      imagePath: map['image_path'] as String?,
-      latitude: map['latitude'] as double?,
-      longitude: map['longitude'] as double?,
-      address: map['address'] as String?,
-      landmark: map['landmark'] as String?,
-      description: map['description'] as String?,
-      householdHead: map['household_head'] as String?,
-      householdSize: map['household_size'] as int?,
-      phoneNumber: map['phone_number'] as String?,
-      services: map['services'] as String?,
-      notes: map['notes'] as String?, siteCode: '', province: '', district: '', municipality: '', ward: '', traditionalAuthority: '', section: '', directions: '',
+      id: _toInt(map['id']),
+      name: _toString(map['name']) ?? '',
+      village: _toString(map['village']) ?? '',
+      type: _toSiteType(map['type']),
+      registeredAt: _toDateTime(map['registered_at']),
+      imagePath: _toString(map['image_path']),
+      latitude: _toDouble(map['latitude']),
+      longitude: _toDouble(map['longitude']),
+      address: _toString(map['address']),
+      landmark: _toString(map['landmark']),
+      description: _toString(map['description']),
+      householdHead: _toString(map['household_head']),
+      householdSize: _toInt(map['household_size']),
+      phoneNumber: _toString(map['phone_number']),
+      services: _toString(map['services']),
+      notes: _toString(map['notes']),
+      siteCode: _toString(map['site_code']) ?? '',
+      province: _toString(map['province']) ?? '',
+      district: _toString(map['district']) ?? '',
+      municipality: _toString(map['municipality']) ?? '',
+      ward: _toString(map['ward']) ?? '',
+      traditionalAuthority: _toString(map['traditional_authority']) ?? '',
+      section: _toString(map['section']) ?? '',
+      directions: _toString(map['directions']) ?? '',
+      distanceFromLandmark: _toDouble(map['distance_from_landmark']),
     );
   }
 }
