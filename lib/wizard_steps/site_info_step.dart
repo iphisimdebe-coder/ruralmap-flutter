@@ -501,17 +501,7 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
 
         const SizedBox(height: 12),
 
-        TextFormField(
-          controller: widget.distanceController,
-          keyboardType: TextInputType.number,
-          decoration: decoration(
-            'Distance from Landmark (m)',
-            icon: Icons.straighten,
-          ),
-        ),
-
-        const SizedBox(height: 12),
-
+         
         TextFormField(
           controller: widget.addressController,
           maxLines: 2,
@@ -523,16 +513,7 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
 
         const SizedBox(height: 12),
 
-        TextFormField(
-          controller: widget.directionsController,
-          maxLines: 3,
-          decoration: decoration(
-            'Directions to the Site',
-            icon: Icons.alt_route,
-          ),
-        ),
-
-        const SizedBox(height: 24),
+        
       ],
     );
   }

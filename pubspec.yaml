@@ -50,6 +50,12 @@ dependencies:
   share_plus: ^10.1.4
   # State Management
   provider: ^6.1.5+1
+  
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  min_sdk_android: 21
 
 dev_dependencies:
   flutter_test:

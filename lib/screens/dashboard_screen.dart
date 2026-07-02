@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../database/db_helper.dart';
 import '../models/site.dart';
+import '../models/user.dart';
 import '../theme/app_theme.dart';
 import '../widgets/quick_action_button.dart';
 import '../widgets/recent_registration_tile.dart';
@@ -16,12 +17,14 @@ class DashboardScreen extends StatefulWidget {
   final int refreshToken;
   final ValueChanged<int>? onNavigate;
   final VoidCallback? onOpenRegister;
+  final String? currentUserEmail; // Pass logged-in user email here
 
   const DashboardScreen({
     super.key,
     this.refreshToken = 0,
     this.onNavigate,
     this.onOpenRegister,
+    this.currentUserEmail,
   });
 
   @override
@@ -31,8 +34,11 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   DashboardStats _stats = DashboardStats.empty();
   List<Site> _recent = [];
+  AppUser? _currentUser;
   bool _loading = true;
   String? _errorMessage;
+
+  static const String roleAdmin = 'Admin';
 
   @override
   void initState() {
@@ -43,16 +49,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void didUpdateWidget(covariant DashboardScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.refreshToken!= widget.refreshToken) {
+    if (oldWidget.refreshToken != widget.refreshToken) {
       _load();
     }
   }
 
   Future<void> _bootstrap() async {
     try {
-      // 1. Ensure DB is open first
       await DBHelper.instance.database;
-      // 2. Only then seed. If seeding fails, we still try to load
       await DBHelper.instance.seedIfEmpty().catchError((e, st) {
         debugPrint('Seed failed but continuing: $e\n$st');
       });
@@ -75,15 +79,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
 
     try {
-      final results = await Future.wait([
+      final futures = <Future>[
         DBHelper.instance.getDashboardStats(),
         DBHelper.instance.getAllSites(limit: 4),
-      ]);
+      ];
+
+      if (widget.currentUserEmail != null) {
+        futures.add(DBHelper.instance.getUserByEmail(widget.currentUserEmail!));
+      }
+
+      final results = await Future.wait(futures);
 
       if (!mounted) return;
       setState(() {
         _stats = results[0] as DashboardStats;
         _recent = results[1] as List<Site>;
+        _currentUser = results.length > 2 ? results[2] as AppUser? : null;
         _loading = false;
         _errorMessage = null;
       });
@@ -98,7 +109,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _openRegister() async {
-    if (widget.onOpenRegister!= null) {
+    if (widget.onOpenRegister != null) {
       widget.onOpenRegister!();
       return;
     }
@@ -110,48 +121,78 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (saved == true) _load();
   }
 
+  Widget _sectionCard({required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.divider),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textPrimary.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(18),
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final today = DateFormat('d MMM yyyy').format(DateTime.now());
     final totalTypeCount = _stats.countsByType.values.fold<int>(0, (a, b) => a + b);
     final totalVillageCount = _stats.countsByVillage.values.fold<int>(0, (a, b) => a + b);
     final maxVillageCount = _stats.countsByVillage.values.isEmpty
-       ? 1
-        : _stats.countsByVillage.values.reduce((a, b) => a > b? a : b);
+        ? 1
+        : _stats.countsByVillage.values.reduce((a, b) => a > b ? a : b);
     final screenWidth = MediaQuery.of(context).size.width;
 
     final quickActionColumns = screenWidth >= 900
-       ? 4
+        ? 4
         : screenWidth >= 700
-           ? 4
+            ? 4
             : screenWidth >= 500
-               ? 3
+                ? 3
                 : 2;
 
     final siteTypeColumns = screenWidth >= 900
-       ? 6
+        ? 6
         : screenWidth >= 700
-           ? 4
+            ? 4
             : screenWidth >= 500
-               ? 4
+                ? 4
                 : 2;
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        actions: [
+          if (_currentUser?.role == roleAdmin)
+            IconButton(
+              icon: const Icon(Icons.admin_panel_settings),
+              tooltip: 'Admin Panel',
+              onPressed: () => widget.onNavigate?.call(6),
+            ),
+        ],
+      ),
       body: _loading
-         ? const Center(child: CircularProgressIndicator())
-          : _errorMessage!= null
-             ? Center(
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : _errorMessage != null
+              ? Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 28),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.error_outline, size: 64, color: Colors.redAccent),
+                        const Icon(Icons.error_outline, size: 64, color: AppColors.error),
                         const SizedBox(height: 20),
                         Text(
                           _errorMessage!,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 16),
+                          style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
                         ),
                         const SizedBox(height: 20),
                         FilledButton.icon(
@@ -165,62 +206,105 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: _load,
+                  color: AppColors.primary,
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      const Text('Good morning, Enumerator 👋',
-                          style: TextStyle(color: AppColors.textSecondary)),
-                      const SizedBox(height: 4),
+                      Text(
+                        'Good morning, ${_currentUser?.name ?? 'Enumerator'} 👋',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Dashboard Overview',
-                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          const Text(
+                            'Dashboard Overview',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
-                              border: Border.all(color: AppColors.divider),
-                              borderRadius: BorderRadius.circular(10),
+                              color: AppColors.surfaceElevated,
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.calendar_today_outlined, size: 14),
+                                const Icon(Icons.calendar_today_outlined,
+                                    size: 14, color: AppColors.textSecondary),
                                 const SizedBox(width: 6),
-                                Text(today, style: const TextStyle(fontSize: 12)),
+                                Text(
+                                  today,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
 
-                      // --- Hero summary card ---
-                      TotalSitesCard(
-                        total: _stats.totalSites,
-                        deltaToday: _stats.registeredToday,
-                        today: _stats.registeredToday,
-                        thisWeek: _stats.registeredThisWeek,
-                        villages: _stats.villageCount,
+                      // --- Hero summary card with gradient ---
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: AppColors.heroGradient,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(2),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                          child: TotalSitesCard(
+                            total: _stats.totalSites,
+                            deltaToday: _stats.registeredToday,
+                            today: _stats.registeredToday,
+                            thisWeek: _stats.registeredThisWeek,
+                            villages: _stats.villageCount,
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 28),
 
                       // --- Quick actions ---
                       SectionHeader(
-                          title: 'Quick Actions',
-                          actionLabel: 'Customise',
-                          actionIcon: Icons.settings_outlined,
-                          onAction: () {}),
-                      const SizedBox(height: 12),
+                        title: 'Quick Actions',
+                        actionLabel: 'Customise',
+                        actionIcon: Icons.tune,
+                        onAction: () {},
+                      ),
+                      const SizedBox(height: 14),
                       GridView.count(
                         crossAxisCount: quickActionColumns,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 14,
+                        crossAxisSpacing: 14,
                         childAspectRatio: 0.95,
                         children: [
                           QuickActionButton(
-                              icon: Icons.add,
+                              icon: Icons.add_circle,
                               title: 'Register',
                               subtitle: 'New Site',
                               highlighted: true,
@@ -231,84 +315,122 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               subtitle: 'Find Sites',
                               onTap: () => widget.onNavigate?.call(1)),
                           QuickActionButton(
-                              icon: Icons.map_outlined,
+                              icon: Icons.map,
                               title: 'Map View',
                               subtitle: 'View on Map',
                               onTap: () => widget.onNavigate?.call(3)),
                           QuickActionButton(
-                              icon: Icons.bar_chart,
+                              icon: Icons.insights,
                               title: 'Reports',
                               subtitle: 'Analytics',
                               onTap: () => widget.onNavigate?.call(4)),
                           QuickActionButton(
-                              icon: Icons.person_outline,
+                              icon: Icons.account_circle_outlined,
                               title: 'Profile',
                               subtitle: 'Enumerator',
                               onTap: () => widget.onNavigate?.call(5)),
                           QuickActionButton(
-                              icon: Icons.cloud_upload_outlined,
+                              icon: Icons.cloud_done_outlined,
                               title: 'Local Save',
                               subtitle: 'Offline Ready',
                               onTap: _openRegister),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 28),
 
                       // --- By site type ---
-                      SectionHeader(title: 'By Site Type', actionLabel: 'View Details', onAction: () {}),
-                      const SizedBox(height: 12),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: SiteType.values.length,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: siteTypeColumns,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                          mainAxisExtent: 165,
-                        ),
-                        itemBuilder: (context, index) {
-                          final type = SiteType.values[index];
-                          final count = _stats.countsByType[type]?? 0;
-                          final pct = totalTypeCount == 0? 0.0 : (count / totalTypeCount) * 100;
+                      _sectionCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SectionHeader(
+                              title: 'By Site Type',
+                              actionLabel: 'View Details',
+                              onAction: () {},
+                            ),
+                            const SizedBox(height: 16),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: SiteType.values.length,
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: siteTypeColumns,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                mainAxisExtent: 165,
+                              ),
+                              itemBuilder: (context, index) {
+                                final type = SiteType.values[index];
+                                final count = _stats.countsByType[type] ?? 0;
+                                final pct = totalTypeCount == 0 ? 0.0 : (count / totalTypeCount) * 100;
 
-                          return SiteTypeCard(
-                            type: type,
-                            count: count,
-                            percentage: pct,
-                          );
-                        },
+                                return SiteTypeCard(
+                                  type: type,
+                                  count: count,
+                                  percentage: pct,
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 28),
 
                       // --- Recent registrations ---
-                      SectionHeader(title: 'Recent Registrations', actionLabel: 'View All', onAction: () {}),
-                      const SizedBox(height: 4),
-                      if (_recent.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20),
-                          child: Text('No sites registered yet.',
-                              style: TextStyle(color: AppColors.textSecondary)),
-                        )
-                      else
-                       ..._recent.map((s) => RecentRegistrationTile(site: s)),
-                      const SizedBox(height: 24),
+                      _sectionCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SectionHeader(
+                              title: 'Recent Registrations',
+                              actionLabel: 'View All',
+                              onAction: () => widget.onNavigate?.call(1),
+                            ),
+                            const SizedBox(height: 8),
+                            if (_recent.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20),
+                                child: Center(
+                                  child: Text(
+                                    'No sites registered yet.',
+                                    style: TextStyle(color: AppColors.textSecondary),
+                                  ),
+                                ),
+                              )
+                            else
+                              ..._recent.map((s) => RecentRegistrationTile(site: s)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 28),
 
                       // --- Top villages ---
-                      if (_stats.countsByVillage.isNotEmpty)...[
-                        SectionHeader(title: 'Top Villages', actionLabel: 'View All', onAction: () {}),
-                        const SizedBox(height: 4),
-                       ..._stats.countsByVillage.entries.take(5).map((e) {
-                          final pct = totalVillageCount == 0? 0.0 : (e.value / totalVillageCount) * 100;
-                          return VillageProgressRow(
-                            village: e.key,
-                            count: e.value,
-                            percentage: pct,
-                            fraction: e.value / maxVillageCount,
-                          );
-                        }),
-                        const SizedBox(height: 20),
-                      ],
+                      if (_stats.countsByVillage.isNotEmpty)
+                        _sectionCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SectionHeader(
+                                title: 'Top Villages',
+                                actionLabel: 'View All',
+                                onAction: () {},
+                              ),
+                              const SizedBox(height: 8),
+                              ..._stats.countsByVillage.entries.take(5).map((e) {
+                                final pct = totalVillageCount == 0
+                                    ? 0.0
+                                    : (e.value / totalVillageCount) * 100;
+                                return VillageProgressRow(
+                                  village: e.key,
+                                  count: e.value,
+                                  percentage: pct,
+                                  fraction: e.value / maxVillageCount,
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),

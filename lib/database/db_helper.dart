@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../models/site.dart';
+import '../models/user.dart';
 
 /// Singleton wrapper around the local SQLite database.
 ///
@@ -37,7 +38,7 @@ class DBHelper {
 
     return openDatabase(
       path,
-      version: 3,
+      version: 5, // bumped to 5 for updated users table
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -100,10 +101,10 @@ class DBHelper {
   Future<List<String>> getBackupFiles() async {
     final backupDir = await _ensureDirectory(_backupFolderName);
     final files = backupDir
-       .listSync()
-       .whereType<File>()
-       .where((file) => file.path.toLowerCase().endsWith('.db'))
-       .toList();
+      .listSync()
+      .whereType<File>()
+      .where((file) => file.path.toLowerCase().endsWith('.db'))
+      .toList();
 
     files.sort(
       (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
@@ -150,7 +151,6 @@ class DBHelper {
     final excel = Excel.createExcel();
     final sheet = excel['Sites'];
 
-    // Headers
     final headers = [
       'id', 'site_code', 'name', 'type', 'registered_at', 'province', 'district',
       'municipality', 'ward', 'traditional_authority', 'village', 'section',
@@ -160,7 +160,6 @@ class DBHelper {
     ];
     sheet.appendRow(headers.map((e) => TextCellValue(e)).toList());
 
-    // Data
     for (final s in sites) {
       sheet.appendRow([
         TextCellValue(s.id?.toString()?? ''),
@@ -208,7 +207,6 @@ class DBHelper {
     final sites = await getAllSites();
     final rows = <List<dynamic>>[];
 
-    // Headers
     rows.add([
       'id', 'site_code', 'name', 'type', 'registered_at', 'province', 'district',
       'municipality', 'ward', 'traditional_authority', 'village', 'section',
@@ -217,7 +215,6 @@ class DBHelper {
       'description', 'services', 'notes', 'image_path'
     ]);
 
-    // Data
     for (final s in sites) {
       rows.add([
         s.id,
@@ -293,6 +290,21 @@ class DBHelper {
         directions TEXT
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE users(
+        name TEXT NOT NULL,
+        email TEXT PRIMARY KEY NOT NULL,
+        phone TEXT,
+        role TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
+        lastLogin TEXT
+      )
+    ''');
+
+    await db.execute('CREATE INDEX idx_sites_village ON sites(village)');
+    await db.execute('CREATE INDEX idx_sites_type ON sites(type)');
+    await db.execute('CREATE INDEX idx_users_role ON users(role)');
   }
 
   // ---------------------------------------------------------------------------
@@ -320,7 +332,6 @@ class DBHelper {
     int oldVersion,
     int newVersion,
   ) async {
-    // v1 -> v2: Add location + household fields
     if (oldVersion < 2) {
       await _addColumnIfNotExists(db, 'sites', 'latitude', 'REAL');
       await _addColumnIfNotExists(db, 'sites', 'longitude', 'REAL');
@@ -334,7 +345,6 @@ class DBHelper {
       await _addColumnIfNotExists(db, 'sites', 'notes', 'TEXT');
     }
 
-    // v2 -> v3: Add admin boundary fields
     if (oldVersion < 3) {
       await _addColumnIfNotExists(db, 'sites', 'site_code', 'TEXT');
       await _addColumnIfNotExists(db, 'sites', 'province', 'TEXT');
@@ -346,15 +356,122 @@ class DBHelper {
       await _addColumnIfNotExists(db, 'sites', 'distance_from_landmark', 'REAL');
       await _addColumnIfNotExists(db, 'sites', 'directions', 'TEXT');
     }
+
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS users(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          email TEXT UNIQUE NOT NULL,
+          phone TEXT,
+          role TEXT NOT NULL,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL,
+          assigned_area TEXT
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
+    }
+
+    // v4 -> v5: Migrate users table to new schema: email as PK, drop id/is_active/assigned_area, add lastLogin
+    if (oldVersion < 5) {
+      await db.execute('''
+        CREATE TABLE users_new(
+          name TEXT NOT NULL,
+          email TEXT PRIMARY KEY NOT NULL,
+          phone TEXT,
+          role TEXT NOT NULL,
+          createdAt TEXT NOT NULL,
+          lastLogin TEXT
+        )
+      ''');
+
+      // Migrate old data if exists
+      final oldUsers = await db.query('users');
+      for (final u in oldUsers) {
+        await db.insert('users_new', {
+          'name': u['name'],
+          'email': u['email'],
+          'phone': u['phone'],
+          'role': u['role'],
+          'createdAt': u['created_at']?? u['createdAt']?? DateTime.now().toIso8601String(),
+          'lastLogin': null,
+        });
+      }
+
+      await db.execute('DROP TABLE users');
+      await db.execute('ALTER TABLE users_new RENAME TO users');
+      await db.execute('CREATE INDEX idx_users_role ON users(role)');
+    }
   }
 
   // ---------------------------------------------------------------------------
-  // CREATE
+  // USER CRUD - ADMIN
+  // ---------------------------------------------------------------------------
+
+  Future<int> insertUser(AppUser user) async {
+    final db = await database;
+    return await db.insert(
+      'users',
+      user.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<AppUser>> getAllUsers({String? filterRole}) async {
+    final db = await database;
+    final maps = await db.query(
+      'users',
+      where: filterRole!= null? 'role =?' : null,
+      whereArgs: filterRole!= null? [filterRole] : null,
+      orderBy: 'createdAt DESC',
+    );
+    return maps.map((e) => AppUser.fromMap(e)).toList();
+  }
+
+  Future<AppUser?> getUserByEmail(String email) async {
+    final db = await database;
+    final maps = await db.query(
+      'users',
+      where: 'email =?',
+      whereArgs: [email],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return AppUser.fromMap(maps.first);
+  }
+
+  Future<int> updateUser(AppUser user) async {
+    final db = await database;
+    return await db.update(
+      'users',
+      user.toMap(),
+      where: 'email =?',
+      whereArgs: [user.email],
+    );
+  }
+
+  Future<int> deleteUser(String email) async {
+    final db = await database;
+    return await db.delete('users', where: 'email =?', whereArgs: [email]);
+  }
+
+  Future<int> getUserCountByRole(String role) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM users WHERE role =?',
+      [role],
+    );
+    return result.first['count'] as int;
+  }
+
+  // ---------------------------------------------------------------------------
+  // SITE CRUD
   // ---------------------------------------------------------------------------
 
   Future<int> insertSite(Site site) async {
     final db = await database;
-
     return db.insert(
       'sites',
       site.toMap()..remove('id'),
@@ -362,13 +479,8 @@ class DBHelper {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // UPDATE
-  // ---------------------------------------------------------------------------
-
   Future<int> updateSite(Site site) async {
     final db = await database;
-
     return db.update(
       'sites',
       site.toMap(),
@@ -377,13 +489,8 @@ class DBHelper {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // DELETE
-  // ---------------------------------------------------------------------------
-
   Future<int> deleteSite(int id) async {
     final db = await database;
-
     return db.delete(
       'sites',
       where: 'id =?',
@@ -391,50 +498,35 @@ class DBHelper {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // GET ALL
-  // ---------------------------------------------------------------------------
+  Future<int> deleteAllSites() async {
+    final db = await database;
+    return await db.delete('sites');
+  }
 
   Future<List<Site>> getAllSites({int? limit}) async {
     final db = await database;
-
     final rows = await db.query(
       'sites',
       orderBy: 'registered_at DESC',
       limit: limit,
     );
-
     return rows.map((e) => Site.fromMap(e)).toList();
   }
 
-  // ---------------------------------------------------------------------------
-  // GET BY ID
-  // ---------------------------------------------------------------------------
-
   Future<Site?> getSite(int id) async {
     final db = await database;
-
     final rows = await db.query(
       'sites',
       where: 'id =?',
       whereArgs: [id],
       limit: 1,
     );
-
-    if (rows.isEmpty) {
-      return null;
-    }
-
+    if (rows.isEmpty) return null;
     return Site.fromMap(rows.first);
   }
 
-  // ---------------------------------------------------------------------------
-  // SEARCH
-  // ---------------------------------------------------------------------------
-
   Future<List<Site>> searchSites(String query) async {
     final db = await database;
-
     final rows = await db.query(
       'sites',
       where: '''
@@ -442,14 +534,9 @@ class DBHelper {
         OR village LIKE?
         OR household_head LIKE?
       ''',
-      whereArgs: [
-        '%$query%',
-        '%$query%',
-        '%$query%',
-      ],
+      whereArgs: ['%$query%', '%$query%', '%$query%'],
       orderBy: 'registered_at DESC',
     );
-
     return rows.map((e) => Site.fromMap(e)).toList();
   }
 
@@ -459,60 +546,36 @@ class DBHelper {
 
   Future<DashboardStats> getDashboardStats() async {
     final db = await database;
-
     final now = DateTime.now();
-
-    final startOfToday = DateTime(
-      now.year,
-      now.month,
-      now.day,
-    );
-
-    final startOfWeek = startOfToday.subtract(
-      Duration(days: now.weekday - 1),
-    );
+    final startOfToday = DateTime(now.year, now.month, now.day);
+    final startOfWeek = startOfToday.subtract(Duration(days: now.weekday - 1));
 
     final total = Sqflite.firstIntValue(
-          await db.rawQuery(
-            'SELECT COUNT(*) FROM sites',
-          ),
-        )??
-        0;
+          await db.rawQuery('SELECT COUNT(*) FROM sites'),
+        )?? 0;
 
     final today = Sqflite.firstIntValue(
           await db.rawQuery(
-            '''
-            SELECT COUNT(*)
-            FROM sites
-            WHERE registered_at >=?
-            ''',
+            'SELECT COUNT(*) FROM sites WHERE registered_at >=?',
             [startOfToday.toIso8601String()],
           ),
-        )??
-        0;
+        )?? 0;
 
     final week = Sqflite.firstIntValue(
           await db.rawQuery(
-            '''
-            SELECT COUNT(*)
-            FROM sites
-            WHERE registered_at >=?
-            ''',
+            'SELECT COUNT(*) FROM sites WHERE registered_at >=?',
             [startOfWeek.toIso8601String()],
           ),
-        )??
-        0;
+        )?? 0;
 
     final villageRows = await db.rawQuery('''
-      SELECT village,
-             COUNT(*) AS cnt
+      SELECT village, COUNT(*) AS cnt
       FROM sites
       GROUP BY village
       ORDER BY cnt DESC
     ''');
 
     final Map<String, int> villageCounts = {};
-
     for (final row in villageRows) {
       final village = row['village']?.toString()?? '';
       final count = row['cnt'] is int
@@ -524,14 +587,12 @@ class DBHelper {
     }
 
     final typeRows = await db.rawQuery('''
-      SELECT type,
-             COUNT(*) AS cnt
+      SELECT type, COUNT(*) AS cnt
       FROM sites
       GROUP BY type
     ''');
 
     final Map<SiteType, int> typeCounts = {};
-
     for (final row in typeRows) {
       final typeValue = row['type']?.toString()?? '';
       final typeCount = row['cnt'] is int
@@ -557,10 +618,23 @@ class DBHelper {
   Future<void> seedIfEmpty() async {
     final existing = await getAllSites(limit: 1);
 
+    final userCount = Sqflite.firstIntValue(
+      await (await database).rawQuery('SELECT COUNT(*) FROM users')
+    )?? 0;
+
+    if (userCount == 0) {
+      await insertUser(AppUser(
+        name: 'Admin User',
+        email: 'admin@test.com',
+        phone: '0000000000',
+        role: 'Admin',
+        createdAt: DateTime.now(),
+      ));
+    }
+
     if (existing.isNotEmpty) return;
 
     final now = DateTime.now();
-
     final samples = [
       Site(
         name: 'Dlamini Residence',
@@ -580,9 +654,7 @@ class DBHelper {
         name: 'Thandi Spaza Shop',
         village: 'eSikhawini',
         type: SiteType.business,
-        registeredAt: now.subtract(
-          const Duration(minutes: 15),
-        ),
+        registeredAt: now.subtract(const Duration(minutes: 15)),
         siteCode: '',
         province: '',
         district: '',
@@ -596,9 +668,7 @@ class DBHelper {
         name: 'Zion Christian Church',
         village: 'Mandlakazi',
         type: SiteType.church,
-        registeredAt: now.subtract(
-          const Duration(minutes: 30),
-        ),
+        registeredAt: now.subtract(const Duration(minutes: 30)),
         siteCode: '',
         province: '',
         district: '',
@@ -612,9 +682,7 @@ class DBHelper {
         name: 'Ulundi Primary School',
         village: 'Ulundi',
         type: SiteType.school,
-        registeredAt: now.subtract(
-          const Duration(hours: 1),
-        ),
+        registeredAt: now.subtract(const Duration(hours: 1)),
         siteCode: '',
         province: '',
         district: '',
