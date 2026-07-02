@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:csv/csv.dart';
+import 'package:excel/excel.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -137,6 +139,124 @@ class DBHelper {
     await _db?.close();
     _db = null;
     _dbFuture = null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // EXCEL / CSV EXPORTS
+  // ---------------------------------------------------------------------------
+
+  Future<String> exportSitesToExcel() async {
+    final sites = await getAllSites();
+    final excel = Excel.createExcel();
+    final sheet = excel['Sites'];
+
+    // Headers
+    final headers = [
+      'id', 'site_code', 'name', 'type', 'registered_at', 'province', 'district',
+      'municipality', 'ward', 'traditional_authority', 'village', 'section',
+      'household_head', 'household_size', 'phone_number', 'address', 'landmark',
+      'distance_from_landmark', 'directions', 'latitude', 'longitude',
+      'description', 'services', 'notes', 'image_path'
+    ];
+    sheet.appendRow(headers.map((e) => TextCellValue(e)).toList());
+
+    // Data
+    for (final s in sites) {
+      sheet.appendRow([
+        TextCellValue(s.id?.toString()?? ''),
+        TextCellValue(s.siteCode),
+        TextCellValue(s.name),
+        TextCellValue(s.type.name),
+        TextCellValue(s.registeredAt.toIso8601String()),
+        TextCellValue(s.province),
+        TextCellValue(s.district),
+        TextCellValue(s.municipality),
+        TextCellValue(s.ward),
+        TextCellValue(s.traditionalAuthority),
+        TextCellValue(s.village),
+        TextCellValue(s.section),
+        TextCellValue(s.householdHead?? ''),
+        TextCellValue(s.householdSize?.toString()?? ''),
+        TextCellValue(s.phoneNumber?? ''),
+        TextCellValue(s.address?? ''),
+        TextCellValue(s.landmark?? ''),
+        TextCellValue(s.distanceFromLandmark?.toString()?? ''),
+        TextCellValue(s.directions),
+        TextCellValue(s.latitude?.toString()?? ''),
+        TextCellValue(s.longitude?.toString()?? ''),
+        TextCellValue(s.description?? ''),
+        TextCellValue(s.services?? ''),
+        TextCellValue(s.notes?? ''),
+        TextCellValue(s.imagePath?? ''),
+      ]);
+    }
+
+    final exportDir = await _ensureDirectory(_exportFolderName);
+    final filePath = join(
+      exportDir.path,
+      'sites_export_${DateTime.now().millisecondsSinceEpoch}.xlsx',
+    );
+    final fileBytes = excel.encode();
+    if (fileBytes!= null) {
+      final file = File(filePath);
+      await file.writeAsBytes(fileBytes);
+    }
+    return filePath;
+  }
+
+  Future<String> exportSitesToCsv() async {
+    final sites = await getAllSites();
+    final rows = <List<dynamic>>[];
+
+    // Headers
+    rows.add([
+      'id', 'site_code', 'name', 'type', 'registered_at', 'province', 'district',
+      'municipality', 'ward', 'traditional_authority', 'village', 'section',
+      'household_head', 'household_size', 'phone_number', 'address', 'landmark',
+      'distance_from_landmark', 'directions', 'latitude', 'longitude',
+      'description', 'services', 'notes', 'image_path'
+    ]);
+
+    // Data
+    for (final s in sites) {
+      rows.add([
+        s.id,
+        s.siteCode,
+        s.name,
+        s.type.name,
+        s.registeredAt.toIso8601String(),
+        s.province,
+        s.district,
+        s.municipality,
+        s.ward,
+        s.traditionalAuthority,
+        s.village,
+        s.section,
+        s.householdHead,
+        s.householdSize,
+        s.phoneNumber,
+        s.address,
+        s.landmark,
+        s.distanceFromLandmark,
+        s.directions,
+        s.latitude,
+        s.longitude,
+        s.description,
+        s.services,
+        s.notes,
+        s.imagePath,
+      ]);
+    }
+
+    final csvData = const ListToCsvConverter().convert(rows);
+    final exportDir = await _ensureDirectory(_exportFolderName);
+    final filePath = join(
+      exportDir.path,
+      'sites_export_${DateTime.now().millisecondsSinceEpoch}.csv',
+    );
+    final file = File(filePath);
+    await file.writeAsString(csvData);
+    return filePath;
   }
 
   // ---------------------------------------------------------------------------
@@ -396,7 +516,7 @@ class DBHelper {
     for (final row in villageRows) {
       final village = row['village']?.toString()?? '';
       final count = row['cnt'] is int
-         ? row['cnt'] as int
+        ? row['cnt'] as int
           : int.tryParse(row['cnt']?.toString()?? '')?? 0;
       if (village.isNotEmpty) {
         villageCounts[village] = count;
@@ -415,7 +535,7 @@ class DBHelper {
     for (final row in typeRows) {
       final typeValue = row['type']?.toString()?? '';
       final typeCount = row['cnt'] is int
-         ? row['cnt'] as int
+        ? row['cnt'] as int
           : int.tryParse(row['cnt']?.toString()?? '')?? 0;
       typeCounts[SiteTypeX.fromString(typeValue)] = typeCount;
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../database/db_helper.dart';
 import '../providers/auth_provider.dart';
@@ -40,8 +41,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final path = await DBHelper.instance.exportDatabase();
       await _showMessage('Exported database to: $path');
+      await Share.shareXFiles([XFile(path)], text: 'Database backup');
     } catch (error) {
       await _showMessage('Export failed: ${error.toString()}');
+    }
+  }
+
+  Future<void> _exportToExcel() async {
+    try {
+      _showMessage('Generating Excel file...');
+      final path = await DBHelper.instance.exportSitesToExcel();
+      await _showMessage('Excel exported to: $path');
+      await Share.shareXFiles([XFile(path)], text: 'Umlalazi Census Sites Export');
+    } catch (error) {
+      await _showMessage('Excel export failed: ${error.toString()}');
+    }
+  }
+
+  Future<void> _exportToCsv() async {
+    try {
+      _showMessage('Generating CSV file...');
+      final path = await DBHelper.instance.exportSitesToCsv();
+      await _showMessage('CSV exported to: $path');
+      await Share.shareXFiles([XFile(path)], text: 'Umlalazi Census Sites Export');
+    } catch (error) {
+      await _showMessage('CSV export failed: ${error.toString()}');
     }
   }
 
@@ -67,29 +91,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _showExportOptions() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.table_chart),
+                title: const Text('Export to Excel (.xlsx)'),
+                subtitle: const Text('Best for opening in Excel/Google Sheets'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _exportToExcel();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.text_snippet),
+                title: const Text('Export to CSV (.csv)'),
+                subtitle: const Text('Universal format, smaller file'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _exportToCsv();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.storage),
+                title: const Text('Export Raw Database (.db)'),
+                subtitle: const Text('Full SQLite file for backup'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _exportDatabase();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView(
-
       padding: const EdgeInsets.all(16),
-
       children: [
-
         Card(
           elevation: 3,
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
-
               children: [
-
                 const CircleAvatar(
                   radius: 45,
-                  child: Icon(Icons.person,size:40),
+                  child: Icon(Icons.person, size: 40),
                 ),
-
-                const SizedBox(height:12),
-
+                const SizedBox(height: 12),
                 Consumer<AuthProvider>(
                   builder: (context, auth, child) {
                     final user = auth.user;
@@ -115,9 +174,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
                   },
                 ),
-
-                const SizedBox(height:16),
-
+                const SizedBox(height: 16),
                 FilledButton.icon(
                   onPressed: () async {
                     final messenger = ScaffoldMessenger.of(context);
@@ -133,229 +190,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: const Icon(Icons.edit),
                   label: const Text("Edit Profile"),
                 )
-
               ],
             ),
           ),
         ),
-
-        const SizedBox(height:20),
-
+        const SizedBox(height: 20),
         _sectionTitle("Field Statistics"),
-
         Card(
           child: Column(
-
             children: const [
-
               ListTile(
                 leading: Icon(Icons.home_work),
                 title: Text("Sites Registered"),
                 trailing: Text("1,244"),
               ),
-
               Divider(),
-
               ListTile(
                 leading: Icon(Icons.location_on),
                 title: Text("GPS Captured"),
                 trailing: Text("1,236"),
               ),
-
               Divider(),
-
               ListTile(
                 leading: Icon(Icons.cloud_upload),
                 title: Text("Pending Sync"),
                 trailing: Text("23"),
               ),
-
             ],
           ),
         ),
-
-        const SizedBox(height:20),
-
+        const SizedBox(height: 20),
         _sectionTitle("Data Management"),
-
         Card(
-
           child: Column(
-
             children: [
-
               ListTile(
-
                 leading: const Icon(Icons.sync),
-
                 title: const Text("Sync Data"),
-
                 subtitle: const Text("Upload unsynced records"),
-
                 trailing: const Icon(Icons.chevron_right),
-
                 onTap: () {},
-
               ),
-
               const Divider(),
-
               ListTile(
-
                 leading: const Icon(Icons.download),
-
-                title: const Text("Export Database"),
-
+                title: const Text("Export Sites"),
+                subtitle: const Text("Excel, CSV, or Database"),
                 trailing: const Icon(Icons.chevron_right),
-
-                onTap: _exportDatabase,
-
+                onTap: _showExportOptions,
               ),
-
               const Divider(),
-
               ListTile(
-
                 leading: const Icon(Icons.upload),
-
                 title: const Text("Import Database"),
-
+                subtitle: const Text("Restore from latest backup"),
                 trailing: const Icon(Icons.chevron_right),
-
                 onTap: _importDatabase,
-
               ),
-
               const Divider(),
-
               ListTile(
-
                 leading: const Icon(Icons.backup),
-
                 title: const Text("Backup Database"),
-
+                subtitle: const Text("Create local backup copy"),
                 trailing: const Icon(Icons.chevron_right),
-
                 onTap: _backupDatabase,
-
               ),
-
             ],
           ),
         ),
-
-        const SizedBox(height:20),
-
+        const SizedBox(height: 20),
         _sectionTitle("Device"),
-
         Card(
-
           child: Column(
-
             children: [
-
               ListTile(
-
                 leading: const Icon(Icons.gps_fixed),
-
                 title: const Text("GPS Status"),
-
                 subtitle: const Text("Ready"),
-
               ),
-
               const Divider(),
-
               ListTile(
-
                 leading: const Icon(Icons.storage),
-
                 title: const Text("Database"),
-
                 subtitle: const Text("SQLite Local Storage"),
-
               ),
-
               const Divider(),
-
               ListTile(
-
                 leading: const Icon(Icons.memory),
-
                 title: const Text("Storage Used"),
-
                 subtitle: const Text("23 MB"),
-
               ),
-
             ],
           ),
         ),
-
-        const SizedBox(height:20),
-
+        const SizedBox(height: 20),
         _sectionTitle("Application"),
-
         Card(
-
           child: Column(
-
             children: [
-
               SwitchListTile(
-
                 value: false,
-
-                onChanged: (v){},
-
+                onChanged: (v) {},
                 title: const Text("Dark Mode"),
-
                 secondary: const Icon(Icons.dark_mode),
-
               ),
-
               const Divider(),
-
               ListTile(
-
                 leading: const Icon(Icons.help),
-
                 title: const Text("Help"),
-
                 trailing: const Icon(Icons.chevron_right),
-
               ),
-
               const Divider(),
-
               ListTile(
-
                 leading: const Icon(Icons.privacy_tip),
-
                 title: const Text("Privacy Policy"),
-
                 trailing: const Icon(Icons.chevron_right),
-
               ),
-
               const Divider(),
-
               ListTile(
-
                 leading: const Icon(Icons.info),
-
                 title: const Text("Version"),
-
                 subtitle: Text(version),
-
               ),
-
             ],
           ),
         ),
-
-        const SizedBox(height:20),
-
+        const SizedBox(height: 20),
         FilledButton.icon(
           style: FilledButton.styleFrom(
             backgroundColor: Colors.red,
@@ -366,35 +326,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
           icon: const Icon(Icons.logout),
           label: const Text("Logout"),
         ),
-
-        const SizedBox(height:40),
-
+        const SizedBox(height: 40),
       ],
     );
   }
 
-  Widget _sectionTitle(String title){
-
+  Widget _sectionTitle(String title) {
     return Padding(
-
-      padding: const EdgeInsets.only(bottom:10),
-
+      padding: const EdgeInsets.only(bottom: 10),
       child: Text(
-
         title,
-
         style: const TextStyle(
-
           fontWeight: FontWeight.bold,
-
-          fontSize:18,
-
+          fontSize: 18,
         ),
-
       ),
-
     );
-
   }
-
 }
