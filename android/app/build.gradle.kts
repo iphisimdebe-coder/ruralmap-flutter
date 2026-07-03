@@ -1,24 +1,29 @@
 plugins {
     id("com.android.application")
-    id("kotlin-android")
+    id("org.jetbrains.kotlin.android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-val localProperties = java.util.Properties()
-val localPropertiesFile = rootProject.file("local.properties")
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.reader(Charsets.UTF_8).use { reader ->
-        localProperties.load(reader)
-    }
-}
-
-val flutterVersionCode = localProperties.getProperty("flutter.versionCode")?.toInt() ?: 1
-val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
-
 android {
+
     namespace = "com.amaphisi.ruralmap"
+
     compileSdk = flutter.compileSdkVersion
+
     ndkVersion = flutter.ndkVersion
+
+    defaultConfig {
+
+        applicationId = "com.amaphisi.ruralmap"
+
+        minSdk = flutter.minSdkVersion
+
+        targetSdk = flutter.targetSdkVersion
+
+        versionCode = flutter.versionCode
+
+        versionName = flutter.versionName
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -29,18 +34,13 @@ android {
         jvmTarget = "17"
     }
 
-    defaultConfig {
-        applicationId = "com.amaphisi.ruralmap"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutterVersionCode
-        versionName = flutterVersionName
-    }
-
     buildTypes {
         release {
+
             signingConfig = signingConfigs.getByName("debug")
+
             isMinifyEnabled = false
+
             isShrinkResources = false
         }
     }
@@ -49,5 +49,3 @@ android {
 flutter {
     source = "../.."
 }
-
-dependencies {}
