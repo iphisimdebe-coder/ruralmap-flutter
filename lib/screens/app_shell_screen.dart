@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../providers/auth_provider.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_top_bar.dart';
 import 'dashboard_screen.dart';
@@ -57,8 +59,10 @@ class _AppShellScreenState extends State<AppShellScreen> {
     );
 
     if (saved == true) {
-      setState(() => _refreshToken += 1);
-      setState(() => _currentIndex = 0);
+      setState(() {
+        _refreshToken += 1;
+        _currentIndex = 0; // Jump back to dashboard
+      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Site saved locally.')),
@@ -69,6 +73,9 @@ class _AppShellScreenState extends State<AppShellScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch auth so we rebuild when user logs in/out
+    final auth = context.watch<AuthProvider>();
+    
     return Scaffold(
       appBar: RuralMapAppBar(
         title: _titleForIndex(_currentIndex),
@@ -83,11 +90,12 @@ class _AppShellScreenState extends State<AppShellScreen> {
       body: IndexedStack(index: _currentIndex, children: [
         DashboardScreen(
           refreshToken: _refreshToken,
+          currentUserEmail: auth.currentUser?.email, // Key fix: pass live email
           onNavigate: (index) => setState(() => _currentIndex = index),
           onOpenRegister: _openRegister,
         ),
         const SiteListScreen(),
-        const SizedBox.shrink(),
+        const SizedBox.shrink(), // Placeholder for FAB
         MapScreen(refreshToken: _refreshToken),
         const ReportsScreen(),
         const ProfileScreen(),
@@ -105,5 +113,4 @@ class _AppShellScreenState extends State<AppShellScreen> {
       ),
     );
   }
-
 }

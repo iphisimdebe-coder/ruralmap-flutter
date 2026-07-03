@@ -10,22 +10,19 @@ class AuthProvider with ChangeNotifier {
   
   AppUser? _currentUser;
   User? _firebaseUser;
-  bool _isLoaded = false; // Add this
+  bool _isLoaded = false;
   
   AppUser? get currentUser => _currentUser;
-  bool get isAuthenticated => _currentUser != null; // Renamed from isLoggedIn for AuthGate
-  bool get isLoaded => _isLoaded; // Add this getter
+  bool get isAuthenticated => _currentUser != null;
+  bool get isLoaded => _isLoaded;
   bool get isAdmin => _currentUser?.role == 'Admin';
 
   AuthProvider() {
-    // Listen to Firebase auth state changes
+    // Still listen, but don't rely on it for login/register flow
     _firebaseAuth.authStateChanges().listen(_onAuthStateChanged);
   }
 
-  // Add this method - called from main.dart
   Future<void> checkAuthStatus() async {
-    // Firebase handles session persistence automatically
-    // Just wait for first authStateChanges event
     _firebaseUser = _firebaseAuth.currentUser;
     if (_firebaseUser != null) {
       _currentUser = await DBHelper.instance.getUserByEmail(_firebaseUser!.email!);
@@ -37,7 +34,8 @@ class AuthProvider with ChangeNotifier {
   Future<void> _onAuthStateChanged(User? firebaseUser) async {
     _firebaseUser = firebaseUser;
     if (firebaseUser != null) {
-      _currentUser = await DBHelper.instance.getUserByEmail(firebaseUser.email!);
+      // Only update if we don't already have user from login/register
+      _currentUser ??= await DBHelper.instance.getUserByEmail(firebaseUser.email!);
       if (_currentUser != null) {
         await DBHelper.instance.updateUser(
           _currentUser!.copyWith(lastLogin: DateTime.now()),
@@ -46,7 +44,6 @@ class AuthProvider with ChangeNotifier {
     } else {
       _currentUser = null;
     }
-    // Only notify if already loaded, otherwise checkAuthStatus handles it
     if (_isLoaded) notifyListeners();
   }
 
@@ -57,21 +54,29 @@ class AuthProvider with ChangeNotifier {
         password: password,
       );
       
-      // Check if user exists in local DB, if not create basic profile
+      // Key fix: Set _currentUser immediately, don't wait for stream
       var localUser = await DBHelper.instance.getUserByEmail(email);
       if (localUser == null) {
         localUser = AppUser(
           name: cred.user?.displayName ?? 'User',
           email: email,
           phone: '',
-          role: 'Enumerator', // default role
+          role: 'Enumerator',
           createdAt: DateTime.now(),
           lastLogin: DateTime.now(),
         );
         await DBHelper.instance.insertUser(localUser);
+      } else {
+        // Update last login
+        localUser = localUser.copyWith(lastLogin: DateTime.now());
+        await DBHelper.instance.updateUser(localUser);
       }
       
-      return null; // success
+      _firebaseUser = cred.user;
+      _currentUser = localUser; // Set it NOW
+      notifyListeners(); // Notify NOW - AuthGate rebuilds immediately
+      
+      return null;
     } on FirebaseAuthException catch (e) {
       return _handleFirebaseError(e);
     } catch (e) {
@@ -87,7 +92,6 @@ class AuthProvider with ChangeNotifier {
     required String role,
   }) async {
     try {
-      // 1. Create Firebase user
       final cred = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -95,7 +99,6 @@ class AuthProvider with ChangeNotifier {
       
       await cred.user?.updateDisplayName(name);
 
-      // 2. Save profile to local DB
       final user = AppUser(
         name: name,
         email: email,
@@ -106,7 +109,12 @@ class AuthProvider with ChangeNotifier {
       );
       await DBHelper.instance.insertUser(user);
       
-      return null; // success
+      // Key fix: Set state immediately
+      _firebaseUser = cred.user;
+      _currentUser = user; // Set it NOW
+      notifyListeners(); // Notify NOW - AuthGate goes to AppShellScreen
+      
+      return null;
     } on FirebaseAuthException catch (e) {
       return _handleFirebaseError(e);
     } catch (e) {
@@ -136,83 +144,68 @@ class AuthProvider with ChangeNotifier {
   Future<void> logout() async {
     await _firebaseAuth.signOut();
     _currentUser = null;
-    notifyListeners();
-  }
-  // Add these inside AuthProvider class, before the last }
-
-Future<String?> updateProfile({
-  required String name,
-  required String phone,
-}) async {
-  if (_currentUser == null) return 'Not logged in';
-  try {
-    // Update Firebase display name
-    await _firebaseUser?.updateDisplayName(name);
-
-    // Update local DB
-    final updated = _currentUser!.copyWith(
-      name: name,
-      phone: phone,
-    );
-    await DBHelper.instance.updateUser(updated);
-    _currentUser = updated;
-    notifyListeners();
-    return null;
-  } catch (e) {
-    return 'Failed to update profile: $e';
-  }
-}
-
-Future<String?> changePassword({
-  required String currentPassword,
-  required String newPassword,
-}) async {
-  if (_firebaseUser == null) return 'Not logged in';
-  try {
-    // Re-authenticate first
-    final cred = EmailAuthProvider.credential(
-      email: _firebaseUser!.email!,
-      password: currentPassword,
-    );
-    await _firebaseUser!.reauthenticateWithCredential(cred);
-
-    // Update password
-    await _firebaseUser!.updatePassword(newPassword);
-    return null;
-  } on FirebaseAuthException catch (e) {
-    if (e.code == 'wrong-password') return 'Current password is incorrect';
-    return _handleFirebaseError(e);
-  } catch (e) {
-    return 'Failed to change password: $e';
-  }
-}
-
-Future<String?> deleteAccount(String password) async {
-  if (_firebaseUser == null || _currentUser == null) return 'Not logged in';
-  try {
-    // Re-authenticate
-    final cred = EmailAuthProvider.credential(
-      email: _firebaseUser!.email!,
-      password: password,
-    );
-    await _firebaseUser!.reauthenticateWithCredential(cred);
-
-    // Delete from local DB first
-    await DBHelper.instance.deleteUser(_currentUser!.email);
-
-    // Delete Firebase account
-    await _firebaseUser!.delete();
-
-    _currentUser = null;
     _firebaseUser = null;
     notifyListeners();
-    return null;
-  } on FirebaseAuthException catch (e) {
-    return _handleFirebaseError(e);
-  } catch (e) {
-    return 'Failed to delete account: $e';
   }
-}
+
+  Future<String?> updateProfile({
+    required String name,
+    required String phone,
+  }) async {
+    if (_currentUser == null) return 'Not logged in';
+    try {
+      await _firebaseUser?.updateDisplayName(name);
+      final updated = _currentUser!.copyWith(name: name, phone: phone);
+      await DBHelper.instance.updateUser(updated);
+      _currentUser = updated;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      return 'Failed to update profile: $e';
+    }
+  }
+
+  Future<String?> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    if (_firebaseUser == null) return 'Not logged in';
+    try {
+      final cred = EmailAuthProvider.credential(
+        email: _firebaseUser!.email!,
+        password: currentPassword,
+      );
+      await _firebaseUser!.reauthenticateWithCredential(cred);
+      await _firebaseUser!.updatePassword(newPassword);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password') return 'Current password is incorrect';
+      return _handleFirebaseError(e);
+    } catch (e) {
+      return 'Failed to change password: $e';
+    }
+  }
+
+  Future<String?> deleteAccount(String password) async {
+    if (_firebaseUser == null || _currentUser == null) return 'Not logged in';
+    try {
+      final cred = EmailAuthProvider.credential(
+        email: _firebaseUser!.email!,
+        password: password,
+      );
+      await _firebaseUser!.reauthenticateWithCredential(cred);
+      await DBHelper.instance.deleteUser(_currentUser!.email);
+      await _firebaseUser!.delete();
+      _currentUser = null;
+      _firebaseUser = null;
+      notifyListeners();
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return _handleFirebaseError(e);
+    } catch (e) {
+      return 'Failed to delete account: $e';
+    }
+  }
 
   String _handleFirebaseError(FirebaseAuthException e) {
     switch (e.code) {
