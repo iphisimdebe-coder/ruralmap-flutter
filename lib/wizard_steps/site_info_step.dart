@@ -342,57 +342,59 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
 ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          initialValue: _selectedDistrict, // Fixed: was initialValue
-          decoration: decoration(
-            'District',
-            icon: Icons.location_city_outlined,
-          ),
-          items: _districtOptions
-              .map((district) => DropdownMenuItem(
-                    value: district,
-                    child: Text(district),
-                  ))
-              .toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedDistrict = value;
-              _selectedMunicipality = null;
-              _selectedWard = null;
-              widget.districtController.text = value ?? '';
-              widget.municipalityController.clear();
-              widget.wardController.clear();
-            });
-          },
-          validator: (value) =>
-              value == null || value.isEmpty ? 'Required' : null,
-        ),
+  value: _selectedDistrict,
+  decoration: decoration(
+    'District',
+    icon: Icons.location_city_outlined,
+  ),
+  items: _districtOptions
+      .map((district) => DropdownMenuItem<String>(
+            value: district,
+            child: Text(district),
+          ))
+      .toList(),
+  onChanged: (value) {
+    setState(() {
+      _selectedDistrict = value;
+      _selectedMunicipality = null;
+      _selectedWard = null;
+
+      widget.districtController.text = value ?? '';
+      widget.municipalityController.clear();
+      widget.wardController.clear();
+    });
+  },
+  validator: (value) =>
+      value == null || value.isEmpty ? 'Required' : null,
+),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          initialValue: _selectedMunicipality, // Fixed: was initialValue
-          decoration: decoration(
-            'Municipality',
-            icon: Icons.account_balance_outlined,
-          ),
-          items: _municipalityOptions
-              .map((municipality) => DropdownMenuItem(
-                    value: municipality,
-                    child: Text(municipality),
-                  ))
-              .toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedMunicipality = value;
-              _selectedWard = null;
-              widget.municipalityController.text = value ?? '';
-              widget.wardController.clear();
-            });
-          },
-          validator: (value) =>
-              value == null || value.isEmpty ? 'Required' : null,
-        ),
+  value: _selectedMunicipality,
+  decoration: decoration(
+    'Municipality',
+    icon: Icons.account_balance_outlined,
+  ),
+  items: _municipalityOptions
+      .map((municipality) => DropdownMenuItem<String>(
+            value: municipality,
+            child: Text(municipality),
+          ))
+      .toList(),
+  onChanged: (value) {
+    setState(() {
+      _selectedMunicipality = value;
+      _selectedWard = null;
+
+      widget.municipalityController.text = value ?? '';
+      widget.wardController.clear();
+    });
+  },
+  validator: (value) =>
+      value == null || value.isEmpty ? 'Required' : null,
+),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          initialValue: _selectedWard, // Fixed: was initialValue
+          value: _selectedWard,
           decoration: decoration(
             'Ward',
             icon: Icons.pin_drop_outlined,
