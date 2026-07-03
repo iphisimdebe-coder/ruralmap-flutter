@@ -7,14 +7,8 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("key.properties")
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-}
-
 android {
-    namespace = "com.example.ruralmap"
+    namespace = "com.amaphisi.ruralmap"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -28,29 +22,16 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.ruralmap"
+        applicationId = "com.amaphisi.ruralmap"
         minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
-    signingConfigs {
-        create("release") {
-            if (keystorePropertiesFile.exists()) {
-                keyAlias = keystoreProperties["keyAlias"] as String
-                keyPassword = keystoreProperties["keyPassword"] as String
-                storeFile = keystoreProperties["storeFile"]?.let { file(it) }
-                storePassword = keystoreProperties["storePassword"] as String
-            }
-        }
-    }
-
     buildTypes {
         release {
-            if (keystorePropertiesFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            // Signing removed - will use debug keys
             isMinifyEnabled = false
             isShrinkResources = false
         }
@@ -63,4 +44,5 @@ flutter {
 
 dependencies {}
 
-apply(plugin = "com.google.gms.google-services")
+// Remove this line if it exists:
+// apply(plugin = "com.google.gms.google-services")
