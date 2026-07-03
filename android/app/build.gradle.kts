@@ -4,6 +4,14 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val localProperties = java.util.Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.reader(Charsets.UTF_8).use { reader ->
+        localProperties.load(reader)
+    }
+}
+
 val flutterVersionCode = localProperties.getProperty("flutter.versionCode")?.toInt() ?: 1
 val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
 
@@ -23,7 +31,7 @@ android {
 
     defaultConfig {
         applicationId = "com.amaphisi.ruralmap"
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutterVersionCode
         versionName = flutterVersionName
