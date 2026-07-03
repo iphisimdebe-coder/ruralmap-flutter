@@ -112,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   if (_registerMode) const SizedBox(height: 16),
                   if (_registerMode)
                     DropdownButtonFormField<String>(
-                      value: _selectedRole, // Fixed: was initialValue
+                      initialValue: _selectedRole, // Fixed: was initialValue
                       decoration: const InputDecoration(
                         labelText: 'Role',
                         prefixIcon: Icon(Icons.badge),

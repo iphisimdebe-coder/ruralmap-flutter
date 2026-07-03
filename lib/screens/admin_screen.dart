@@ -85,7 +85,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: role, // DropdownButtonFormField uses 'value', not 'initialValue' in older Flutter
+                  initialValue: role, // DropdownButtonFormField uses 'value', not 'initialValue' in older Flutter
                   decoration: const InputDecoration(labelText: 'Role'),
                   items: roles
                       .map((r) => DropdownMenuItem(value: r, child: Text(r)))
