@@ -57,7 +57,7 @@ class HouseholdDetailsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            ?trailing,
+            if (trailing != null) trailing, // Fixed: Dart 3.6 syntax
           ],
         ),
       ),
@@ -82,7 +82,7 @@ class HouseholdDetailsScreen extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          ?trailing,
+          if (trailing != null) trailing, // Fixed: Dart 3.6 syntax
         ],
       ),
     );
@@ -360,8 +360,6 @@ class HouseholdDetailsScreen extends StatelessWidget {
                   _sectionTitle(
                     "GPS Coordinates",
                     Icons.gps_fixed,
-                 
-                         
                   ),
                   _detailTile(
                     Icons.my_location,

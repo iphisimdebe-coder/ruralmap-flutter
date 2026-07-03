@@ -125,10 +125,8 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
       }
 
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
+  desiredAccuracy: LocationAccuracy.high,
+);
       final placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
       final place = placemarks.isNotEmpty ? placemarks.first : null;
       final addressParts = [
