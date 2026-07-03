@@ -19,6 +19,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: '3.27.4'  # Fixes AGP 9 + generateLockfiles crash
           cache: true
 
       - run: flutter pub get
@@ -39,6 +40,9 @@ jobs:
         continue-on-error: true
 
       - run: flutter build apk --release
+
+      - name: Rename APK
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/georura.apk
 
       - uses: actions/upload-artifact@v4
         with:
