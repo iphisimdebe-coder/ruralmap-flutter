@@ -84,14 +84,23 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: role, // DropdownButtonFormField uses 'value', not 'initialValue' in older Flutter
-                  decoration: const InputDecoration(labelText: 'Role'),
-                  items: roles
-                      .map((r) => DropdownMenuItem(value: r, child: Text(r)))
-                      .toList(),
-                  onChanged: (v) => setDialogState(() => role = v!),
-                ),
+               DropdownButtonFormField<String>(
+  value: role,
+  decoration: const InputDecoration(
+    labelText: 'Role',
+  ),
+  items: roles
+      .map((r) => DropdownMenuItem<String>(
+            value: r,
+            child: Text(r),
+          ))
+      .toList(),
+  onChanged: (v) {
+    if (v != null) {
+      setDialogState(() => role = v);
+    }
+  },
+),
                 if (isEdit && user.lastLogin != null) ...[
                   const SizedBox(height: 12),
                   Text(

@@ -111,20 +111,28 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   if (_registerMode) const SizedBox(height: 16),
                   if (_registerMode)
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedRole, // Fixed: was initialValue
-                      decoration: const InputDecoration(
-                        labelText: 'Role',
-                        prefixIcon: Icon(Icons.badge),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'Enumerator', child: Text('Enumerator')),
-                        DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) setState(() => _selectedRole = value);
-                      },
-                    ),
+                   DropdownButtonFormField<String>(
+  value: _selectedRole,
+  decoration: const InputDecoration(
+    labelText: 'Role',
+    prefixIcon: Icon(Icons.badge),
+  ),
+  items: const [
+    DropdownMenuItem<String>(
+      value: 'Enumerator',
+      child: Text('Enumerator'),
+    ),
+    DropdownMenuItem<String>(
+      value: 'Admin',
+      child: Text('Admin'),
+    ),
+  ],
+  onChanged: (value) {
+    if (value != null) {
+      setState(() => _selectedRole = value);
+    }
+  },
+),
                   if (_registerMode) const SizedBox(height: 16),
                   TextFormField(
                     controller: _emailController,

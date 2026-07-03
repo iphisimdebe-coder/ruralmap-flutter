@@ -313,32 +313,33 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
         ),
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
-          initialValue: _selectedProvince, // Fixed: was initialValue
-          decoration: decoration(
-            'Province',
-            icon: Icons.map_outlined,
-          ),
-          items: provinces
-              .map((province) => DropdownMenuItem(
-                    value: province,
-                    child: Text(province),
-                  ))
-              .toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedProvince = value;
-              _selectedDistrict = null;
-              _selectedMunicipality = null;
-              _selectedWard = null;
-              widget.provinceController.text = value ?? '';
-              widget.districtController.clear();
-              widget.municipalityController.clear();
-              widget.wardController.clear();
-            });
-          },
-          validator: (value) =>
-              value == null || value.isEmpty ? 'Required' : null,
-        ),
+  value: _selectedProvince,
+  decoration: decoration(
+    'Province',
+    icon: Icons.map_outlined,
+  ),
+  items: provinces
+      .map((province) => DropdownMenuItem<String>(
+            value: province,
+            child: Text(province),
+          ))
+      .toList(),
+  onChanged: (value) {
+    setState(() {
+      _selectedProvince = value;
+      _selectedDistrict = null;
+      _selectedMunicipality = null;
+      _selectedWard = null;
+
+      widget.provinceController.text = value ?? '';
+      widget.districtController.clear();
+      widget.municipalityController.clear();
+      widget.wardController.clear();
+    });
+  },
+  validator: (value) =>
+      value == null || value.isEmpty ? 'Required' : null,
+),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           initialValue: _selectedDistrict, // Fixed: was initialValue
