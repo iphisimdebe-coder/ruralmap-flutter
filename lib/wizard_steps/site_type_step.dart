@@ -28,9 +28,7 @@ class SiteTypeStep extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
         ),
-
         const SizedBox(height: 8),
-
         Text(
           "Select the primary type of location you are registering. "
           "This determines the information collected in the next steps.",
@@ -38,9 +36,7 @@ class SiteTypeStep extends StatelessWidget {
                 color: AppColors.textSecondary,
               ),
         ),
-
         const SizedBox(height: 24),
-
         ...SiteType.values.map(
           (type) => Padding(
             padding: const EdgeInsets.only(bottom: 16),
@@ -52,9 +48,7 @@ class SiteTypeStep extends StatelessWidget {
             ),
           ),
         ),
-
         const SizedBox(height: 24),
-
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -105,13 +99,10 @@ class _SiteTypeCard extends StatelessWidget {
     switch (type) {
       case SiteType.house:
         return Icons.home_rounded;
-
       case SiteType.business:
         return Icons.store_rounded;
-
       case SiteType.church:
         return Icons.church_rounded;
-
       case SiteType.school:
         return Icons.school_rounded;
     }
@@ -121,13 +112,10 @@ class _SiteTypeCard extends StatelessWidget {
     switch (type) {
       case SiteType.house:
         return Colors.orange;
-
       case SiteType.business:
         return Colors.blue;
-
       case SiteType.church:
         return Colors.purple;
-
       case SiteType.school:
         return Colors.green;
     }
@@ -137,13 +125,10 @@ class _SiteTypeCard extends StatelessWidget {
     switch (type) {
       case SiteType.house:
         return "Residential household or homestead.";
-
       case SiteType.business:
         return "Shop, office, market or commercial premises.";
-
       case SiteType.church:
         return "Church, mosque or place of worship.";
-
       case SiteType.school:
         return "School, college or educational institution.";
     }
@@ -151,24 +136,22 @@ class _SiteTypeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-        return AnimatedContainer(
+    return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
         color: selected
-            ? AppColors.primary.withValues(alpha: .08)
+            ? AppColors.primary.withValues(alpha: 0.08)
             : AppColors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: selected
-              ? AppColors.primary
-              : AppColors.divider,
+          color: selected ? AppColors.primary : AppColors.divider,
           width: selected ? 2 : 1,
         ),
         boxShadow: [
           if (selected)
             BoxShadow(
-                  color: AppColors.primary.withValues(alpha: .12),
+              color: AppColors.primary.withValues(alpha: 0.12),
               blurRadius: 12,
               offset: const Offset(0, 5),
             ),
@@ -181,54 +164,43 @@ class _SiteTypeCard extends StatelessWidget {
           padding: EdgeInsets.all(isTablet ? 22 : 18),
           child: Row(
             children: [
-                CircleAvatar(
+              CircleAvatar(
                 radius: isTablet ? 30 : 26,
-                backgroundColor: iconColor.withValues(alpha: .12),
+                backgroundColor: iconColor.withValues(alpha: 0.12),
                 child: Icon(
                   icon,
                   color: iconColor,
                   size: isTablet ? 30 : 26,
                 ),
               ),
-
               const SizedBox(width: 18),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       type.label,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                     ),
-
                     const SizedBox(height: 6),
-
                     Text(
                       description,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: AppColors.textSecondary,
                           ),
                     ),
                   ],
                 ),
               ),
-
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 250),
                 child: selected
                     ? Container(
                         key: const ValueKey("selected"),
                         padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppColors.primary,
                           shape: BoxShape.circle,
                         ),

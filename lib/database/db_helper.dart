@@ -28,7 +28,7 @@ class DBHelper {
     return _db!;
   }
 
-  static const String _dbFileName = 'umlalazi_census.db';
+  static const String _dbFileName = 'georura.db';
   static const String _backupFolderName = 'db_backups';
   static const String _exportFolderName = 'db_exports';
 
@@ -38,7 +38,7 @@ class DBHelper {
 
     return openDatabase(
       path,
-      version: 5, // bumped to 5 for updated users table
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -101,10 +101,10 @@ class DBHelper {
   Future<List<String>> getBackupFiles() async {
     final backupDir = await _ensureDirectory(_backupFolderName);
     final files = backupDir
-      .listSync()
-      .whereType<File>()
-      .where((file) => file.path.toLowerCase().endsWith('.db'))
-      .toList();
+       .listSync()
+       .whereType<File>()
+       .where((file) => file.path.toLowerCase().endsWith('.db'))
+       .toList();
 
     files.sort(
       (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
@@ -140,6 +140,49 @@ class DBHelper {
     await _db?.close();
     _db = null;
     _dbFuture = null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // STATS METHODS FOR PROFILE
+  // ---------------------------------------------------------------------------
+
+  Future<Map<String, int>> getFieldStats() async {
+    final db = await database;
+
+    final totalSites = Sqflite.firstIntValue(
+      await db.rawQuery('SELECT COUNT(*) FROM sites'),
+    )?? 0;
+
+    final gpsCaptured = Sqflite.firstIntValue(
+      await db.rawQuery('SELECT COUNT(*) FROM sites WHERE latitude IS NOT NULL AND longitude IS NOT NULL'),
+    )?? 0;
+
+    final pendingSync = Sqflite.firstIntValue(
+      await db.rawQuery('SELECT COUNT(*) FROM sites WHERE isSynced = 0'),
+    )?? 0;
+
+    return {
+      'totalSites': totalSites,
+      'gpsCaptured': gpsCaptured,
+      'pendingSync': pendingSync,
+    };
+  }
+
+  Future<String> getDatabaseSize() async {
+    try {
+      final path = await _currentDatabasePath;
+      final file = File(path);
+      if (await file.exists()) {
+        final bytes = await file.length();
+        if (bytes < 1024 * 1024) {
+          return '${(bytes / 1024).toStringAsFixed(1)} KB';
+        }
+        return '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
+      }
+      return '0 KB';
+    } catch (e) {
+      return 'Unknown';
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -287,7 +330,8 @@ class DBHelper {
         traditional_authority TEXT,
         section TEXT,
         distance_from_landmark REAL,
-        directions TEXT
+        directions TEXT,
+        isSynced INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -374,7 +418,6 @@ class DBHelper {
       await db.execute('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
     }
 
-    // v4 -> v5: Migrate users table to new schema: email as PK, drop id/is_active/assigned_area, add lastLogin
     if (oldVersion < 5) {
       await db.execute('''
         CREATE TABLE users_new(
@@ -387,7 +430,6 @@ class DBHelper {
         )
       ''');
 
-      // Migrate old data if exists
       final oldUsers = await db.query('users');
       for (final u in oldUsers) {
         await db.insert('users_new', {
@@ -403,6 +445,7 @@ class DBHelper {
       await db.execute('DROP TABLE users');
       await db.execute('ALTER TABLE users_new RENAME TO users');
       await db.execute('CREATE INDEX idx_users_role ON users(role)');
+      await _addColumnIfNotExists(db, 'sites', 'isSynced', 'INTEGER NOT NULL DEFAULT 0');
     }
   }
 
@@ -579,7 +622,7 @@ class DBHelper {
     for (final row in villageRows) {
       final village = row['village']?.toString()?? '';
       final count = row['cnt'] is int
-        ? row['cnt'] as int
+         ? row['cnt'] as int
           : int.tryParse(row['cnt']?.toString()?? '')?? 0;
       if (village.isNotEmpty) {
         villageCounts[village] = count;
@@ -596,7 +639,7 @@ class DBHelper {
     for (final row in typeRows) {
       final typeValue = row['type']?.toString()?? '';
       final typeCount = row['cnt'] is int
-        ? row['cnt'] as int
+         ? row['cnt'] as int
           : int.tryParse(row['cnt']?.toString()?? '')?? 0;
       typeCounts[SiteTypeX.fromString(typeValue)] = typeCount;
     }
@@ -610,6 +653,7 @@ class DBHelper {
       countsByVillage: villageCounts,
     );
   }
+  
 
   // ---------------------------------------------------------------------------
   // DEMO DATA
@@ -625,7 +669,7 @@ class DBHelper {
     if (userCount == 0) {
       await insertUser(AppUser(
         name: 'Admin User',
-        email: 'admin@test.com',
+        email: 'admin@email.com',
         phone: '0000000000',
         role: 'Admin',
         createdAt: DateTime.now(),

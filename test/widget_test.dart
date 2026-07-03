@@ -6,7 +6,7 @@ import 'package:ruralmap/screens/register_site_screen.dart';
 
 void main() {
   testWidgets('app shows dashboard and profile navigation', (tester) async {
-    await tester.pumpWidget(const UmlalaziCensusApp());
+    await tester.pumpWidget(const GeoRuraApp());
     await tester.pumpAndSettle();
 
     expect(find.text('Dashboard Overview'), findsOneWidget);

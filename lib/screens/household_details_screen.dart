@@ -57,7 +57,7 @@ class HouseholdDetailsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            if (trailing != null) trailing,
+            ?trailing,
           ],
         ),
       ),
@@ -82,7 +82,7 @@ class HouseholdDetailsScreen extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          if (trailing != null) trailing,
+          ?trailing,
         ],
       ),
     );

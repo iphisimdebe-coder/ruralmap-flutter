@@ -59,7 +59,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (_) => StatefulBuilder(
+      builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: Text(isEdit ? 'Edit User' : 'Add User'),
           content: SingleChildScrollView(
@@ -85,17 +85,17 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: role,
+                  initialValue: role,
                   decoration: const InputDecoration(labelText: 'Role'),
                   items: roles
                       .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                       .toList(),
                   onChanged: (v) => setDialogState(() => role = v!),
                 ),
-                if (isEdit && user?.lastLogin != null) ...[
+                if (isEdit && user.lastLogin != null) ...[
                   const SizedBox(height: 12),
                   Text(
-                    'Last login: ${DateFormat('d MMM yyyy, HH:mm').format(user!.lastLogin!)}',
+                    'Last login: ${user.lastLogin != null ? DateFormat('d MMM yyyy, HH:mm').format(user.lastLogin!) : 'Never'}',
                     style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                   ),
                 ],
@@ -103,11 +103,12 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
             FilledButton(
               onPressed: () async {
                 if (nameCtrl.text.isEmpty || emailCtrl.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  if (!dialogContext.mounted) return; // Fixed: use dialogContext.mounted
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
                     const SnackBar(content: Text('Name and email required')),
                   );
                   return;
@@ -125,7 +126,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                 } else {
                   await DBHelper.instance.insertUser(newUser);
                 }
-                Navigator.pop(context, true);
+                if (dialogContext.mounted) Navigator.pop(dialogContext, true); // Fixed
               },
               child: Text(isEdit ? 'Update' : 'Add'),
             ),
@@ -140,14 +141,14 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   Future<void> _deleteUser(AppUser user) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete User'),
         content: Text('Delete ${user.name}? This cannot be undone.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Delete'),
           ),
         ],
@@ -162,16 +163,16 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   Future<void> _deleteAllData() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete All Data'),
         content: const Text(
           'This will delete ALL sites. This action cannot be undone.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Delete All'),
           ),
         ],
@@ -193,9 +194,9 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,8 +233,8 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: isAdmin
-              ? AppColors.error.withOpacity(0.2)
-              : AppColors.primary.withOpacity(0.2),
+              ? AppColors.error.withValues(alpha: 0.2)
+              : AppColors.primary.withValues(alpha: 0.2),
           child: Icon(
             isAdmin ? Icons.shield : Icons.person,
             color: isAdmin ? AppColors.error : AppColors.primary,
@@ -250,7 +251,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppColors.info.withOpacity(0.2),
+                    color: AppColors.info.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(

@@ -17,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  String _selectedRole = 'Enumerator'; // Add this
   bool _registerMode = false;
   bool _loading = false;
   String? _errorMessage;
@@ -47,10 +48,11 @@ class _LoginScreenState extends State<LoginScreen> {
     String? error;
     if (_registerMode) {
       error = await auth.register(
-        name: _nameController.text,
+        name: _nameController.text.trim(),
         email: email,
         password: password,
-        phone: _phoneController.text,
+        phone: _phoneController.text.trim(),
+        role: _selectedRole, // Added role
       );
     } else {
       error = await auth.login(email: email, password: password);
@@ -106,6 +108,22 @@ class _LoginScreenState extends State<LoginScreen> {
                       keyboardType: TextInputType.phone,
                       textInputAction: TextInputAction.next,
                       validator: (value) => value == null || value.trim().isEmpty ? 'Please enter a phone number' : null,
+                    ),
+                  if (_registerMode) const SizedBox(height: 16),
+                  if (_registerMode)
+                    DropdownButtonFormField<String>(
+                      initialValue: _selectedRole,
+                      decoration: const InputDecoration(
+                        labelText: 'Role',
+                        prefixIcon: Icon(Icons.badge),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'Enumerator', child: Text('Enumerator')),
+                        DropdownMenuItem(value: 'Admin', child: Text('Admin')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) setState(() => _selectedRole = value);
+                      },
                     ),
                   if (_registerMode) const SizedBox(height: 16),
                   TextFormField(
