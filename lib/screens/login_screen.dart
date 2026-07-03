@@ -17,7 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  String _selectedRole = 'Enumerator'; // Add this
+  String _selectedRole = 'Enumerator';
   bool _registerMode = false;
   bool _loading = false;
   String? _errorMessage;
@@ -52,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
         email: email,
         password: password,
         phone: _phoneController.text.trim(),
-        role: _selectedRole, // Added role
+        role: _selectedRole,
       );
     } else {
       error = await auth.login(email: email, password: password);
@@ -112,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   if (_registerMode) const SizedBox(height: 16),
                   if (_registerMode)
                     DropdownButtonFormField<String>(
-                      initialValue: _selectedRole,
+                      value: _selectedRole, // Fixed: was initialValue
                       decoration: const InputDecoration(
                         labelText: 'Role',
                         prefixIcon: Icon(Icons.badge),

@@ -38,7 +38,6 @@ class SiteInfoStep extends StatefulWidget {
 
   @override
   State<SiteInfoStep> createState() => _SiteInfoStepState();
-
 }
 
 class _SiteInfoStepState extends State<SiteInfoStep> {
@@ -71,25 +70,21 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
       'Dannhauser',
       'eMadlangeni',
     ],
-
     'eThekwini Metro': [
       'eThekwini',
     ],
-
     'Harry Gwala': [
       'Dr Nkosazana Dlamini Zuma',
       'Greater Kokstad',
       'Ubuhlebezwe',
       'uMzimkhulu',
     ],
-
     'iLembe': [
       'KwaDukuza',
       'Mandeni',
       'Maphumulo',
       'Ndwedwe',
     ],
-
     'King Cetshwayo': [
       'City of uMhlathuze',
       'Mthonjaneni',
@@ -97,7 +92,6 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
       'uMfolozi',
       'uMlalazi',
     ],
-
     'Ugu': [
       'Hibiscus Coast',
       'Umuziwabantu',
@@ -105,7 +99,6 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
       'uMuziwabantu',
       'Ray Nkonyeni',
     ],
-
     'uMgungundlovu': [
       'Msunduzi',
       'uMngeni',
@@ -115,7 +108,6 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
       'Impendle',
       'uMshwathi',
     ],
-
     'uMkhanyakude': [
       'Jozini',
       'Big Five Hlabisa',
@@ -123,20 +115,17 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
       'The Big Five False Bay',
       'uMhlabuyalingana',
     ],
-
     'uMzinyathi': [
       'Endumeni',
       'Nquthu',
       'Msinga',
       'uMvoti',
     ],
-
     'uThukela': [
       'Alfred Duma',
       'Inkosi Langalibalele',
       'Okhahlamba',
     ],
-
     'uThungulu': [
       'Mandeni',
       'Mthonjaneni',
@@ -144,7 +133,6 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
       'uMlalazi',
       'City of uMhlathuze',
     ],
-
     'Zululand': [
       'AbaQulusi',
       'eDumbe',
@@ -156,7 +144,6 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
   };
 
   /// Example ward data
-  /// (Replace with actual IEC ward lists if required.)
   static const Map<String, List<String>> wardsByMunicipality = {
     'eThekwini': [
       'Ward 1',
@@ -170,7 +157,6 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
       'Ward 9',
       'Ward 10',
     ],
-
     'Msunduzi': [
       'Ward 1',
       'Ward 2',
@@ -180,14 +166,12 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
       'Ward 6',
       'Ward 7',
     ],
-
     'uMngeni': [
       'Ward 1',
       'Ward 2',
       'Ward 3',
       'Ward 4',
     ],
-
     'Newcastle': [
       'Ward 1',
       'Ward 2',
@@ -195,7 +179,6 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
       'Ward 4',
       'Ward 5',
     ],
-
     'KwaDukuza': [
       'Ward 1',
       'Ward 2',
@@ -203,14 +186,12 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
       'Ward 4',
       'Ward 5',
     ],
-
     'Ray Nkonyeni': [
       'Ward 1',
       'Ward 2',
       'Ward 3',
       'Ward 4',
     ],
-
     'City of uMhlathuze': [
       'Ward 1',
       'Ward 2',
@@ -272,15 +253,11 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
             fontWeight: FontWeight.bold,
           ),
         ),
-
         const SizedBox(height: 8),
-
         const Text(
           'Record the site identity and administrative location.',
         ),
-
         const SizedBox(height: 24),
-
         TextFormField(
           controller: widget.siteNameController,
           decoration: decoration(
@@ -290,9 +267,7 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
           validator: (v) =>
               v == null || v.trim().isEmpty ? 'Required' : null,
         ),
-
         const SizedBox(height: 16),
-
         TextFormField(
           controller: widget.siteCodeController,
           readOnly: true,
@@ -301,7 +276,6 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
             icon: Icons.qr_code,
           ),
         ),
-
         if (widget.siteCodeController.text.isNotEmpty) ...[
           const SizedBox(height: 16),
           Center(
@@ -330,7 +304,6 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
           ),
           const SizedBox(height: 16),
         ],
-
         const Text(
           'Administrative Area',
           style: TextStyle(
@@ -338,11 +311,9 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
             fontSize: 18,
           ),
         ),
-
         const SizedBox(height: 16),
-
         DropdownButtonFormField<String>(
-          initialValue: _selectedProvince,
+          value: _selectedProvince, // Fixed: was initialValue
           decoration: decoration(
             'Province',
             icon: Icons.map_outlined,
@@ -368,11 +339,9 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
           validator: (value) =>
               value == null || value.isEmpty ? 'Required' : null,
         ),
-
         const SizedBox(height: 12),
-
         DropdownButtonFormField<String>(
-          initialValue: _selectedDistrict,
+          value: _selectedDistrict, // Fixed: was initialValue
           decoration: decoration(
             'District',
             icon: Icons.location_city_outlined,
@@ -396,11 +365,9 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
           validator: (value) =>
               value == null || value.isEmpty ? 'Required' : null,
         ),
-
         const SizedBox(height: 12),
-
         DropdownButtonFormField<String>(
-          initialValue: _selectedMunicipality,
+          value: _selectedMunicipality, // Fixed: was initialValue
           decoration: decoration(
             'Municipality',
             icon: Icons.account_balance_outlined,
@@ -422,11 +389,9 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
           validator: (value) =>
               value == null || value.isEmpty ? 'Required' : null,
         ),
-
         const SizedBox(height: 12),
-
         DropdownButtonFormField<String>(
-          initialValue: _selectedWard,
+          value: _selectedWard, // Fixed: was initialValue
           decoration: decoration(
             'Ward',
             icon: Icons.pin_drop_outlined,
@@ -446,9 +411,7 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
           validator: (value) =>
               value == null || value.isEmpty ? 'Required' : null,
         ),
-
         const SizedBox(height: 12),
-
         TextFormField(
           controller: widget.traditionalAuthorityController,
           decoration: decoration(
@@ -456,9 +419,7 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
             icon: Icons.groups_outlined,
           ),
         ),
-
         const SizedBox(height: 12),
-
         TextFormField(
           controller: widget.villageController,
           decoration: decoration(
@@ -468,9 +429,7 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
           validator: (v) =>
               v == null || v.trim().isEmpty ? 'Required' : null,
         ),
-
         const SizedBox(height: 12),
-
         TextFormField(
           controller: widget.sectionController,
           decoration: decoration(
@@ -478,9 +437,7 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
             icon: Icons.grid_view_outlined,
           ),
         ),
-
         const SizedBox(height: 24),
-
         const Text(
           'Location Details',
           style: TextStyle(
@@ -488,9 +445,7 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
             fontSize: 18,
           ),
         ),
-
         const SizedBox(height: 16),
-
         TextFormField(
           controller: widget.landmarkController,
           decoration: decoration(
@@ -498,10 +453,7 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
             icon: Icons.place_outlined,
           ),
         ),
-
         const SizedBox(height: 12),
-
-         
         TextFormField(
           controller: widget.addressController,
           maxLines: 2,
@@ -510,10 +462,7 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
             icon: Icons.home_outlined,
           ),
         ),
-
         const SizedBox(height: 12),
-
-        
       ],
     );
   }

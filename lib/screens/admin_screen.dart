@@ -66,26 +66,26 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
+                TextFormField( // Changed from TextField
                   controller: nameCtrl,
                   decoration: const InputDecoration(labelText: 'Full Name'),
                 ),
                 const SizedBox(height: 12),
-                TextField(
+                TextFormField( // Changed from TextField
                   controller: emailCtrl,
                   decoration: const InputDecoration(labelText: 'Email'),
                   keyboardType: TextInputType.emailAddress,
                   enabled: !isEdit, // Email is PK, can't edit
                 ),
                 const SizedBox(height: 12),
-                TextField(
+                TextFormField( // Changed from TextField
                   controller: phoneCtrl,
                   decoration: const InputDecoration(labelText: 'Phone'),
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  initialValue: role,
+                  value: role, // DropdownButtonFormField uses 'value', not 'initialValue' in older Flutter
                   decoration: const InputDecoration(labelText: 'Role'),
                   items: roles
                       .map((r) => DropdownMenuItem(value: r, child: Text(r)))
@@ -107,7 +107,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
             FilledButton(
               onPressed: () async {
                 if (nameCtrl.text.isEmpty || emailCtrl.text.isEmpty) {
-                  if (!dialogContext.mounted) return; // Fixed: use dialogContext.mounted
+                  if (!dialogContext.mounted) return;
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
                     const SnackBar(content: Text('Name and email required')),
                   );
@@ -126,7 +126,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                 } else {
                   await DBHelper.instance.insertUser(newUser);
                 }
-                if (dialogContext.mounted) Navigator.pop(dialogContext, true); // Fixed
+                if (dialogContext.mounted) Navigator.pop(dialogContext, true);
               },
               child: Text(isEdit ? 'Update' : 'Add'),
             ),
