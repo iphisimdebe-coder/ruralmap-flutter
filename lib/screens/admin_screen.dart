@@ -84,20 +84,24 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 12),
-               DropdownButtonFormField<String>(
-  value: role,
+  DropdownButtonFormField<String>(
+  initialValue: role,
   decoration: const InputDecoration(
     labelText: 'Role',
   ),
   items: roles
-      .map((r) => DropdownMenuItem<String>(
-            value: r,
-            child: Text(r),
-          ))
+      .map(
+        (r) => DropdownMenuItem<String>(
+          value: r,
+          child: Text(r),
+        ),
+      )
       .toList(),
-  onChanged: (v) {
-    if (v != null) {
-      setDialogState(() => role = v);
+  onChanged: (value) {
+    if (value != null) {
+      setDialogState(() {
+        role = value;
+      });
     }
   },
 ),

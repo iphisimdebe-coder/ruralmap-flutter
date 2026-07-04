@@ -313,7 +313,7 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
         ),
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
-  value: _selectedProvince,
+  initialValue: _selectedProvince,
   decoration: decoration(
     'Province',
     icon: Icons.map_outlined,
@@ -342,7 +342,7 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
 ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-  value: _selectedDistrict,
+  initialValue: _selectedDistrict,
   decoration: decoration(
     'District',
     icon: Icons.location_city_outlined,
@@ -369,7 +369,7 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
 ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-  value: _selectedMunicipality,
+  initialValue: _selectedMunicipality,
   decoration: decoration(
     'Municipality',
     icon: Icons.account_balance_outlined,
@@ -394,7 +394,7 @@ class _SiteInfoStepState extends State<SiteInfoStep> {
 ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: _selectedWard,
+          initialValue: _selectedWard,
           decoration: decoration(
             'Ward',
             icon: Icons.pin_drop_outlined,
