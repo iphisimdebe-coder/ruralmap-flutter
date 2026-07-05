@@ -2,7 +2,8 @@ name: Flutter Android Build
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build-apk:
@@ -13,14 +14,18 @@ jobs:
 
       - uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: zulu
           java-version: '17'
 
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.44.4'
           channel: stable
-          flutter-version: '3.27.4'  # Fixes AGP 9 + generateLockfiles crash
           cache: true
+
+      - run: flutter --version
+
+      - run: dart --version
 
       - run: flutter pub get
 
