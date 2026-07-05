@@ -64,6 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final path = await DBHelper.instance.exportSitesToExcel();
       if (!mounted) return;
       _showMessage('Excel exported to: $path');
+      // ignore: deprecated_member_use
       await Share.shareXFiles([XFile(path)], text: 'GeoRura Sites Export');
     } catch (error) {
       if (!mounted) return;
@@ -77,6 +78,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final path = await DBHelper.instance.exportSitesToCsv();
       if (!mounted) return;
       _showMessage('CSV exported to: $path');
+      // ignore: deprecated_member_use
       await Share.shareXFiles([XFile(path)], text: 'GeoRura Sites Export');
     } catch (error) {
       if (!mounted) return;
@@ -89,6 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final path = await DBHelper.instance.exportDatabase();
       if (!mounted) return;
       _showMessage('Exported database to: $path');
+      // ignore: deprecated_member_use
       await Share.shareXFiles([XFile(path)], text: 'Database backup');
     } catch (error) {
       if (!mounted) return;

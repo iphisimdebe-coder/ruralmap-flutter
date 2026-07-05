@@ -125,6 +125,7 @@ class _RegisterSiteScreenState extends State<RegisterSiteScreen> {
       }
 
       final position = await Geolocator.getCurrentPosition(
+  // ignore: deprecated_member_use
   desiredAccuracy: LocationAccuracy.high,
 );
       final placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
